@@ -1,0 +1,19 @@
+Anatomical geometry in this exhibition is not drawn by the project.
+
+Models
+- Z-Anatomy, by Gauthier Kervyn — https://www.z-anatomy.com/
+- BodyParts3D, by The Database Center for Life Science (Kousaku Okubo) — https://lifesciencedb.jp/bp3d/
+- FBX distribution used here: Lluís Vinent Juanico, https://github.com/LluisV/Z-Anatomy branch PC-Version, Resources/Models/FBX/
+
+Files loaded by the viewer
+- Regions of human body100.fbx
+- VisceralSystem100.fbx
+- SkeletalSystem100.fbx
+- CardioVascular41.fbx
+- NervousSystem100.fbx
+
+Licence
+Z-Anatomy and this FBX distribution are licensed under Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
+BodyParts3D is licensed under Creative Commons Attribution-ShareAlike 2.1 Japan (CC BY-SA 2.1 JP).
+
+The Living Oman 2040 interface, copy, and simulation are a student exhibition concept. They are not a medical product, and the model indices are not clinical measurements.
