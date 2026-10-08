@@ -9,4 +9,4 @@ npm run dev
 
 Open the local address Vite prints. `npm run build` then `npm run preview` serves the production build.
 
-The public site is published from the `main` branch with GitHub Pages.
+The public site is published on GitHub Pages: https://melramly95.github.io/PSS-Nabd/
