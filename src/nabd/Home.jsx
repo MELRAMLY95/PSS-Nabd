@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Body } from "./Body.jsx";
 import { STAGES, colorFor, previewOrgans, stageFor, toneClass, toneMark } from "./engine.js";
 import { Header } from "./Header.jsx";
+import { sitePath } from "./site.js";
 
 const ORGANS = [
   { id: "brain", name: "The Brain", role: "Intelligence & decision-making", principle: "The brain receives signals from every part of the body and coordinates a single response.", technology: "A central intelligence layer that reads water, energy, temperature and waste data and decides where resources are most urgently needed.", monitors: ["Water availability", "Energy demand", "Temperature", "Waste levels", "Consumption"], oman: "Data-led planning for a more innovative, knowledge-based economy." },
@@ -129,7 +130,7 @@ export default function Home() {
             Nabd — Arabic for <span className="text-bone">pulse</span> — is a self-regulating resource system for water, energy and waste. It borrows the mechanisms the human body uses to stay alive and turns them into infrastructure that senses, decides, circulates, recovers and adapts.
           </p>
           <div className="rise mt-10 flex flex-wrap items-center gap-4" style={{ animationDelay: "0.45s" }}>
-            <a href="/experience" className="rounded-full bg-bio px-6 py-3 font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_32px_rgba(75,227,180,0.55)]">Enter the system — become the brain</a>
+            <a href={sitePath("/experience")} className="rounded-full bg-bio px-6 py-3 font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_32px_rgba(75,227,180,0.55)]">Enter the system — become the brain</a>
             <a href="#concept" className="rounded-full border border-line px-6 py-3 text-mist hover:border-bone hover:text-bone">How it works</a>
           </div>
           <div className="rise mt-8 max-w-xl" style={{ animationDelay: "0.55s" }}>
@@ -354,7 +355,7 @@ export default function Home() {
               ))}
             </ul>
             <p className="mt-8 text-mist">The judging panel has <span className="text-bone">three decisions</span> to stabilise the system, and must agree on each one. Poor choices and the model visibly deteriorates. Intelligent, connected choices and the whole ecosystem comes alive.</p>
-            <a href="/experience" className="mt-8 self-start rounded-full bg-ember px-6 py-3 font-semibold text-ink transition hover:-translate-y-0.5">Run the simulation</a>
+            <a href={sitePath("/experience")} className="mt-8 self-start rounded-full bg-ember px-6 py-3 font-semibold text-ink transition hover:-translate-y-0.5">Run the simulation</a>
           </div>
         </div>
       </section>
@@ -408,7 +409,7 @@ export default function Home() {
         <p className="mx-auto mt-16 max-w-3xl font-display text-4xl leading-tight md:text-6xl">
           If the human body can survive by working as one interconnected system, <em className="text-bio">why shouldn’t our future do the same?</em>
         </p>
-        <a href="/experience" className="mt-12 inline-block rounded-full bg-bio px-8 py-4 font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_32px_rgba(75,227,180,0.55)]">Become the brain of Oman 2040</a>
+        <a href={sitePath("/experience")} className="mt-12 inline-block rounded-full bg-bio px-8 py-4 font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_32px_rgba(75,227,180,0.55)]">Become the brain of Oman 2040</a>
       </section>
 
       <footer className="border-t border-line/60">

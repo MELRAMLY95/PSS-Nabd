@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { sitePath } from "./site.js";
 
 const LINKS = [
   ["concept", "Concept"],
@@ -41,7 +42,7 @@ export function Header({ variant = "home" }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-ink/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-3">
-        <a href="/" className="group flex items-baseline gap-2">
+        <a href={sitePath("/")} className="group flex items-baseline gap-2">
           <span className="font-display text-2xl font-semibold tracking-tight text-bone">Nabd</span>
           <span className="font-display text-lg text-bio" lang="ar">نبض</span>
           <span className="nabd-beat" aria-hidden="true" />
@@ -57,9 +58,9 @@ export function Header({ variant = "home" }) {
           <span className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-mist md:inline">Live simulation · You are the brain</span>
         )}
         {variant === "home" ? (
-          <a href="/experience" className="rounded-full bg-bio px-4 py-2 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(75,227,180,0.5)]">Become the brain →</a>
+          <a href={sitePath("/experience")} className="rounded-full bg-bio px-4 py-2 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(75,227,180,0.5)]">Become the brain →</a>
         ) : (
-          <a href="/" className="rounded-full border border-line px-4 py-2 text-sm text-mist hover:border-bio hover:text-bio">← About the invention</a>
+          <a href={sitePath("/")} className="rounded-full border border-line px-4 py-2 text-sm text-mist hover:border-bio hover:text-bio">← About the invention</a>
         )}
       </div>
       {variant === "home" && (
