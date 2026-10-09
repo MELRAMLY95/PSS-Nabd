@@ -18,8 +18,9 @@ html {
 
 body {
   background:
-    radial-gradient(1100px 680px at 82% -12%, rgba(198, 165, 106, 0.1), transparent 58%),
-    radial-gradient(860px 560px at -8% 46%, rgba(158, 176, 196, 0.05), transparent 56%),
+    radial-gradient(720px 480px at 18% 78%, rgba(224, 138, 85, 0.11), transparent 62%),
+    radial-gradient(1100px 680px at 82% -12%, rgba(198, 165, 106, 0.16), transparent 58%),
+    radial-gradient(860px 560px at -8% 46%, rgba(158, 176, 196, 0.08), transparent 56%),
     var(--color-ink);
   background-repeat: no-repeat;
   animation: nabd-drift 26s ease-in-out infinite alternate;
@@ -778,11 +779,12 @@ section[id] {
 .nabd-hero-title {
   grid-column: 1 / -1;
   justify-self: center;
-  width: min(100%, 26ch);
+  width: max-content;
+  max-width: calc(100% - 1.5rem);
   margin: 0 auto;
   color: var(--color-bone);
-  font-size: clamp(2rem, 3.6vw, 3.6rem);
-  line-height: 1.02;
+  font-size: clamp(2rem, 3.4vw, 3.4rem);
+  line-height: 1.05;
   letter-spacing: 0.04em;
   text-align: center;
 }
@@ -790,6 +792,61 @@ section[id] {
 .nabd-install-body {
   width: min(100%, 420px);
   margin: 0 auto;
+}
+
+.nabd-hero-figure .nabd-spot,
+.nabd-hero-figure .nabd-live-label {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .nabd-hero-title {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .nabd-hero-title br {
+    display: none;
+  }
+
+  .nabd-first {
+    height: 100svh;
+    max-height: 100svh;
+  }
+
+  .nabd-first .nabd-install {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-content: stretch;
+    padding-bottom: 0.75rem;
+  }
+
+  .nabd-first .nabd-hero-copy {
+    order: 2;
+  }
+
+  .nabd-first .nabd-install-body {
+    order: 3;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .nabd-first .nabd-hero-figure {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+    aspect-ratio: 720 / 1280;
+  }
+
+  .nabd-first .nabd-hero-figure .nabd-live-base {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 }
 
 .nabd-organ-list {
@@ -1010,40 +1067,119 @@ section[id] {
   }
 
   .nabd-first .nabd-install {
-    grid-template-columns: minmax(280px, 38vh) 12.5rem minmax(0, 1fr);
-    align-items: start;
+    position: relative;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    justify-content: center;
+    align-items: center;
   }
 
   .nabd-first:not(.is-open) .nabd-install {
     height: 100%;
+    padding-top: 0;
     padding-bottom: 0.85rem;
-    grid-template-rows: auto minmax(0, 1fr);
-    align-items: stretch;
-    gap: 0.7rem 1.5rem;
+    grid-template-rows: auto auto;
+    align-content: center;
+    align-items: center;
+    justify-items: center;
+    gap: 1.1rem 2.75rem;
   }
 
-  .nabd-first:not(.is-open) .nabd-install-body {
+  .nabd-first .nabd-hero-title {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    order: 0;
+  }
+
+  .nabd-first .nabd-hero-copy {
+    grid-column: 2;
+    grid-row: 2;
+    order: 0;
+    justify-self: center;
+    align-self: start;
+  }
+
+  .nabd-first .nabd-install-body {
+    position: absolute;
+    top: 0;
+    bottom: 0.4rem;
+    left: 0;
+    right: calc(50% + 12.25rem);
+    z-index: 1;
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
     justify-content: flex-end;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
+    width: auto;
+    max-width: none;
+    height: auto;
+    margin: 0;
+  }
+
+  .nabd-first .nabd-install-body::before,
+  .nabd-first .nabd-install-body::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .nabd-first .nabd-install-body::before {
+    z-index: 0;
+    left: 8%;
+    right: 2%;
+    top: 8%;
+    bottom: 6%;
+    background: radial-gradient(ellipse at 58% 36%, rgba(230, 211, 164, 0.34), rgba(198, 165, 106, 0.1) 46%, transparent 72%);
+    filter: blur(10px);
+  }
+
+  .nabd-first .nabd-install-body::after {
+    z-index: 2;
+    left: 14%;
+    bottom: 16%;
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(239, 232, 220, 0.95);
+    box-shadow:
+      34px -70px 0 0 rgba(198, 165, 106, 0.75),
+      78px -150px 0 1px rgba(230, 211, 164, 0.5),
+      18px -210px 0 0 rgba(224, 138, 85, 0.55),
+      96px -40px 0 0 rgba(239, 232, 220, 0.4),
+      54px -280px 0 1px rgba(198, 165, 106, 0.45),
+      120px -230px 0 0 rgba(230, 211, 164, 0.35);
+  }
+
+  .nabd-hero-figure {
+    z-index: 1;
+  }
+
+  .nabd-hero-figure .nabd-heart-glow {
+    left: 44%;
+    top: 25.5%;
+    width: 22%;
+    height: 13%;
+    background: radial-gradient(circle, rgba(255, 86, 104, 0.72), rgba(212, 101, 106, 0.28) 46%, transparent 74%);
+  }
+
+  .nabd-hero-figure .nabd-vessels {
+    opacity: 0.62;
   }
 
   .nabd-first:not(.is-open) .nabd-install-body .nabd-live {
     flex: 0 1 auto;
     width: auto;
-    max-width: 100%;
-    height: calc(100% - 4.6rem);
+    max-width: none;
+    height: 100%;
+    max-height: 100%;
     min-height: 0;
     aspect-ratio: 720 / 1280;
   }
 
   .nabd-first:not(.is-open) .nabd-install-body > div:last-child {
-    flex: 0 0 auto;
-    width: min(100%, 16rem);
+    flex: 0 1 auto;
+    width: auto;
+    max-width: 100%;
   }
 
   .nabd-first:not(.is-open) .nabd-install-body .nabd-live-base {
@@ -1072,21 +1208,27 @@ section[id] {
   .nabd-hero-copy {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    height: 100%;
-    padding: 0.1rem 0 0;
+    align-items: center;
+    justify-content: center;
+    width: min(100%, 28rem);
+    height: auto;
+    padding: 0;
+    text-align: center;
   }
 
   .nabd-hero-lead p:not(.font-mono) {
-    max-width: 36rem;
-    margin-top: 1.2rem;
-    font-size: 1.65rem;
-    line-height: 1.7;
+    max-width: 26rem;
+    margin: 0;
+    font-size: 1.15rem;
+    line-height: 1.55;
+    text-align: center;
   }
 
   .nabd-hero-close {
-    margin-top: auto;
-    padding-top: 1.25rem;
+    display: flex;
+    justify-content: center;
+    margin-top: 0.9rem;
+    padding-top: 0;
   }
 
   .nabd-first.is-open .nabd-install {
@@ -1272,8 +1414,15 @@ section[id] {
   .nabd-chest,
   .nabd-heart-layer,
   .nabd-heart-glow,
-  .nabd-vessels {
+  .nabd-vessels,
+  .nabd-hero-figure,
+  .nabd-first .nabd-install-body::before,
+  .nabd-first .nabd-install-body::after {
     animation: none;
+  }
+
+  .nabd-first .nabd-install-body::after {
+    opacity: 0;
   }
 
   .nabd-drop {
@@ -1374,14 +1523,27 @@ section[id] {
     left: -10vw;
     top: 8vh;
     border-radius: 999px;
-    background: radial-gradient(circle, rgba(198, 165, 106, 0.2), transparent 68%);
+    background: radial-gradient(circle, rgba(198, 165, 106, 0.32), transparent 68%);
     filter: blur(18px);
     pointer-events: none;
     animation: nabd-orb 16s ease-in-out infinite alternate;
   }
 
   .nabd-shine {
-    animation: nabd-word 4.6s ease-in-out infinite;
+    animation: nabd-word 3.4s ease-in-out infinite;
+  }
+
+  .nabd-hero-figure {
+    transform-origin: 50% 78%;
+    animation: nabd-hero-breath 5.4s ease-in-out infinite;
+  }
+
+  .nabd-first .nabd-install-body::before {
+    animation: nabd-hero-halo 5.4s ease-in-out infinite;
+  }
+
+  .nabd-first .nabd-install-body::after {
+    animation: nabd-motes 8.5s ease-in-out infinite;
   }
 
   .nabd-install.nabd-enter > * {
@@ -1471,6 +1633,23 @@ section[id] {
       animation-range: entry 0% cover 24%;
     }
   }
+}
+
+@keyframes nabd-hero-breath {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-1.4%) scale(1.015, 1.028); }
+}
+
+@keyframes nabd-hero-halo {
+  0%, 100% { opacity: 0.42; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+@keyframes nabd-motes {
+  0%, 100% { transform: translateY(12%); opacity: 0.15; }
+  18% { opacity: 0.95; }
+  70% { opacity: 0.7; }
+  100% { transform: translateY(-58%); opacity: 0.1; }
 }
 
 @keyframes nabd-grain {

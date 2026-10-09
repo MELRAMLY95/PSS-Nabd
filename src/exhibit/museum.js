@@ -89,23 +89,27 @@ function trimMap(image) {
 
 function wrap(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
   const words = text.split(" ");
+  const lines = [];
   let line = "";
-  let drawn = 0;
-  for (let i = 0; i < words.length; i += 1) {
-    const next = line ? `${line} ${words[i]}` : words[i];
+  words.forEach((word) => {
+    const next = line ? `${line} ${word}` : word;
     if (ctx.measureText(next).width > maxWidth && line) {
-      ctx.fillText(line, x, y);
-      line = words[i];
-      y += lineHeight;
-      drawn += 1;
-      if (drawn >= maxLines - 1) {
-        ctx.fillText(line, x, y);
-        return y + lineHeight;
-      }
+      lines.push(line);
+      line = word;
     } else line = next;
+  });
+  if (line) lines.push(line);
+  const shown = lines.slice(0, maxLines);
+  if (lines.length > maxLines) {
+    let last = shown[maxLines - 1];
+    while (last.length > 1 && ctx.measureText(`${last}…`).width > maxWidth) last = last.slice(0, -1);
+    shown[maxLines - 1] = `${last}…`;
   }
-  if (line) ctx.fillText(line, x, y);
-  return y + lineHeight;
+  shown.forEach((row) => {
+    ctx.fillText(row, x, y);
+    y += lineHeight;
+  });
+  return y;
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -123,39 +127,43 @@ function drawBoard(figure) {
   canvas.width = 1024;
   canvas.height = 1280;
   const ctx = canvas.getContext("2d");
+  const pad = 64;
+  const inner = canvas.width - pad * 2;
   const wash = ctx.createLinearGradient(0, 0, 0, canvas.height);
   wash.addColorStop(0, "#1a1d24");
-  wash.addColorStop(0.18, "#12110e");
+  wash.addColorStop(0.2, "#12110e");
   wash.addColorStop(1, "#07080c");
   ctx.fillStyle = wash;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  const sheen = ctx.createLinearGradient(0, 0, 0, 360);
-  sheen.addColorStop(0, "rgba(255,244,220,0.07)");
-  sheen.addColorStop(1, "rgba(255,244,220,0)");
+  const sheen = ctx.createLinearGradient(0, 0, 0, 280);
+  sheen.addColorStop(0, "rgba(230,211,164,0.1)");
+  sheen.addColorStop(1, "rgba(230,211,164,0)");
   ctx.fillStyle = sheen;
-  ctx.fillRect(0, 0, canvas.width, 360);
+  ctx.fillRect(0, 0, canvas.width, 280);
 
+  ctx.textBaseline = "middle";
   ctx.strokeStyle = "#c6a56a";
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.arc(96, 128, 34, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.fillStyle = "#f4efe6";
-  ctx.font = "600 92px 'Instrument Sans', sans-serif";
-  ctx.fillText(figure.name, 156, 148);
-  ctx.fillStyle = "#e4ddd0";
-  ctx.font = "500 58px Fraunces, Georgia, serif";
-  const afterTitle = wrap(ctx, figure.title, 72, 230, 880, 70, 2);
-
-  ctx.strokeStyle = "rgba(198,165,106,0.45)";
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(72, afterTitle + 8);
-  ctx.lineTo(952, afterTitle + 8);
+  ctx.arc(pad + 28, 92, 26, 0, Math.PI * 2);
   ctx.stroke();
 
-  let y = afterTitle + 78;
+  ctx.fillStyle = "#efe8dc";
+  ctx.font = "600 54px 'Instrument Sans', sans-serif";
+  ctx.fillText(figure.name, pad + 72, 92);
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#e4ddd0";
+  ctx.font = "500 42px Fraunces, Georgia, serif";
+  const afterTitle = wrap(ctx, figure.title, pad, 176, inner, 52, 2);
+
+  ctx.strokeStyle = "rgba(159,216,234,0.45)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(pad, afterTitle + 10);
+  ctx.lineTo(canvas.width - pad, afterTitle + 10);
+  ctx.stroke();
+
+  let y = afterTitle + 58;
   const blocks = [
     ["Biological inspiration", figure.inspiration],
     ["Principle", figure.principle],
@@ -163,30 +171,37 @@ function drawBoard(figure) {
   ];
   blocks.forEach(([label, text]) => {
     ctx.fillStyle = "#c6a56a";
-    ctx.font = "600 32px 'JetBrains Mono', monospace";
-    ctx.fillText(label.toUpperCase(), 72, y);
+    ctx.font = "600 24px 'JetBrains Mono', monospace";
+    ctx.fillText(label.toUpperCase(), pad, y);
     ctx.fillStyle = "#d9d2c6";
-    ctx.font = "400 48px 'Instrument Sans', sans-serif";
-    y = wrap(ctx, text, 72, y + 62, 880, 60, 2) + 28;
+    ctx.font = "400 36px 'Instrument Sans', sans-serif";
+    y = wrap(ctx, text, pad, y + 48, inner, 46, 3) + 22;
   });
 
-  const strip = ctx.createLinearGradient(72, 0, 860, 0);
+  const barY = 1168;
+  const strip = ctx.createLinearGradient(pad, 0, pad + 760, 0);
   strip.addColorStop(0, "#6a5438");
   strip.addColorStop(0.55, "#c6a56a");
   strip.addColorStop(1, "#e6d3a4");
   ctx.fillStyle = strip;
-  roundRect(ctx, 72, 1172, 760, 72, 12);
+  roundRect(ctx, pad, barY, 760, 64, 12);
   ctx.fill();
   ctx.strokeStyle = "rgba(239,232,220,0.55)";
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(910, 1208, 28, 0, Math.PI * 2);
+  ctx.arc(canvas.width - pad - 22, barY + 32, 22, 0, Math.PI * 2);
   ctx.stroke();
   ctx.fillStyle = "#efe8dc";
-  ctx.font = "500 40px 'Instrument Sans', sans-serif";
-  ctx.fillText("→", 892, 1222);
+  ctx.font = "500 32px 'Instrument Sans', sans-serif";
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  ctx.fillText("→", canvas.width - pad - 22, barY + 34);
+  ctx.textAlign = "left";
 
-  return canvasTexture(canvas);
+  const texture = canvasTexture(canvas);
+  texture.anisotropy = 16;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function galleryFloor() {
@@ -207,12 +222,12 @@ function galleryFloor() {
     ctx.fillStyle = `rgba(${shade + 6}, ${shade + 2}, ${shade - 4}, 0.07)`;
     ctx.fillRect(Math.random() * 1024, Math.random() * 1024, 2, 2);
   }
-  ctx.strokeStyle = "rgba(214, 188, 134, 0.55)";
+  ctx.strokeStyle = "rgba(198, 165, 106, 0.45)";
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.arc(512, 512, 268, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.strokeStyle = "rgba(214, 188, 134, 0.18)";
+  ctx.strokeStyle = "rgba(198, 165, 106, 0.16)";
   ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.arc(512, 512, 286, 0, Math.PI * 2);
@@ -238,7 +253,7 @@ function roomWall() {
   wash.addColorStop(1, "#0e0d0b");
   ctx.fillStyle = wash;
   ctx.fillRect(0, 0, 16, 512);
-  ctx.fillStyle = "rgba(214, 188, 134, 0.35)";
+  ctx.fillStyle = "rgba(198, 165, 106, 0.35)";
   ctx.fillRect(0, 470, 16, 3);
   return canvasTexture(canvas);
 }
@@ -305,143 +320,6 @@ function settleSpecimen(canvas) {
   ctx.putImageData(image, 0, 0);
 }
 
-function plantFigure(canvas) {
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = image.data;
-  const width = canvas.width;
-  const height = canvas.height;
-  let toneR = 0;
-  let toneG = 0;
-  let toneB = 0;
-  let toneCount = 0;
-  for (let y = 500; y < 780; y += 2) {
-    for (let x = 95; x < 185; x += 2) {
-      const index = (y * width + x) * 4;
-      if (data[index + 3] < 200) continue;
-      const red = data[index];
-      const green = data[index + 1];
-      const blue = data[index + 2];
-      const max = Math.max(red, green, blue);
-      const min = Math.min(red, green, blue);
-      if (max === 0 || (max - min) / max > 0.45) continue;
-      toneR += red;
-      toneG += green;
-      toneB += blue;
-      toneCount += 1;
-    }
-  }
-  toneR /= toneCount || 1;
-  toneG /= toneCount || 1;
-  toneB /= toneCount || 1;
-  const toneLight = toneR * 0.3 + toneG * 0.5 + toneB * 0.2;
-  const legLine = height * 0.6;
-  for (let y = 0; y < height; y += 1) {
-    const fade = y < legLine ? 0 : Math.min(1, (y - legLine) / 46);
-    for (let x = 0; x < width; x += 1) {
-      const index = (y * width + x) * 4;
-      const alpha = data[index + 3];
-      if (alpha < 8) {
-        data[index + 3] = 0;
-        continue;
-      }
-      if (fade === 0 || x < width * 0.24 || x > width * 0.76) continue;
-      const red = data[index];
-      const green = data[index + 1];
-      const blue = data[index + 2];
-      const max = Math.max(red, green, blue);
-      const min = Math.min(red, green, blue);
-      const sat = max === 0 ? 0 : (max - min) / max;
-      if (sat > 0.48) continue;
-      const light = Math.max(1, red * 0.3 + green * 0.5 + blue * 0.2);
-      const lifted = 58 + (Math.min(light, 80) / 80) * 52;
-      const mapped = light + (lifted - light) * fade;
-      const scale = mapped / toneLight;
-      const mix = 0.78 * fade;
-      data[index] = Math.min(255, Math.round(red * (1 - mix) + toneR * scale * mix));
-      data[index + 1] = Math.min(255, Math.round(green * (1 - mix) + toneG * scale * mix));
-      data[index + 2] = Math.min(255, Math.round(blue * (1 - mix) + toneB * scale * mix));
-    }
-  }
-  const calfLine = Math.floor(height * 0.7);
-  for (let y = calfLine; y < height; y += 1) {
-    const fade = Math.min(1, (y - calfLine) / 36);
-    for (const [x0, x1] of [[170, 370], [370, 560]]) {
-      let min = -1;
-      let max = -1;
-      for (let x = x0; x < x1; x += 1) {
-        if (data[(y * width + x) * 4 + 3] > 18) {
-          if (min < 0) min = x;
-          max = x;
-        }
-      }
-      const span = max - min;
-      if (min < 0 || span < 28 || span > 160) continue;
-      for (let x = min; x <= max; x += 1) {
-        const index = (y * width + x) * 4;
-        if (data[index + 3] > 36) continue;
-        const round = Math.sin(((x - min) / span) * Math.PI);
-        const light = (54 + round * 34) * fade;
-        const scale = light / toneLight;
-        data[index] = Math.min(255, Math.round(toneR * scale));
-        data[index + 1] = Math.min(255, Math.round(toneG * scale));
-        data[index + 2] = Math.min(255, Math.round(toneB * scale));
-        data[index + 3] = Math.round((200 + round * 40) * fade);
-      }
-    }
-  }
-  const yLimit = Math.floor(height * 0.1);
-  const hairX0 = Math.floor(width * 0.34);
-  const hairX1 = Math.floor(width * 0.66);
-  const tops = new Int16Array(width).fill(-1);
-  for (let x = hairX0; x < hairX1; x += 1) {
-    for (let y = Math.floor(height * 0.02); y < yLimit + 50; y += 1) {
-      let solid = 0;
-      for (let k = 0; k < 8; k += 1) {
-        if (data[((y + k) * width + x) * 4 + 3] > 220) solid += 1;
-      }
-      if (solid >= 6) {
-        tops[x] = y;
-        break;
-      }
-    }
-  }
-  const hairline = new Int16Array(tops);
-  for (let x = hairX0; x < hairX1; x += 1) {
-    if (tops[x] < 0) continue;
-    let sum = 0;
-    let count = 0;
-    for (let dx = -8; dx <= 8; dx += 1) {
-      const xx = x + dx;
-      if (xx < 0 || xx >= width || tops[xx] < 0) continue;
-      sum += tops[xx];
-      count += 1;
-    }
-    if (count) hairline[x] = Math.round(sum / count);
-  }
-  for (let x = hairX0; x < hairX1; x += 1) {
-    const top = hairline[x];
-    if (top < 0 || top > yLimit) continue;
-    for (let y = Math.max(0, top - 55); y < top - 8; y += 1) {
-      data[(y * width + x) * 4 + 3] = 0;
-    }
-    for (let y = top - 8; y < top + 34; y += 1) {
-      if (y < 0 || y >= height) continue;
-      const index = (y * width + x) * 4;
-      const into = y - top;
-      if (into > 26) {
-        const light = data[index] * 0.3 + data[index + 1] * 0.5 + data[index + 2] * 0.2;
-        if (data[index + 3] > 180 && light > 130) continue;
-      }
-      data[index] = 12;
-      data[index + 1] = 11;
-      data[index + 2] = 12;
-      data[index + 3] = 255;
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-}
-
 function specimenMaterial(texture) {
   return new THREE.MeshStandardMaterial({
     map: texture,
@@ -468,17 +346,24 @@ function curvedPlane(width, height, bend = 0.035) {
   return geometry;
 }
 
-function glassShell(strength) {
+function glassShell(strength, tint = [0.96, 0.91, 0.78], veil = 0) {
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     side: THREE.DoubleSide,
-    uniforms: { strength: { value: strength } },
+    uniforms: {
+      strength: { value: strength },
+      tint: { value: new THREE.Vector3(tint[0], tint[1], tint[2]) },
+      veil: { value: veil },
+      sweepY: { value: -20 },
+    },
     vertexShader: `
       varying vec3 vNormal;
       varying vec3 vView;
+      varying vec3 vWorld;
       void main() {
         vec4 world = modelMatrix * vec4(position, 1.0);
+        vWorld = world.xyz;
         vNormal = normalize(mat3(modelMatrix) * normal);
         vView = normalize(cameraPosition - world.xyz);
         gl_Position = projectionMatrix * viewMatrix * world;
@@ -486,11 +371,17 @@ function glassShell(strength) {
     `,
     fragmentShader: `
       uniform float strength;
+      uniform vec3 tint;
+      uniform float veil;
+      uniform float sweepY;
       varying vec3 vNormal;
       varying vec3 vView;
+      varying vec3 vWorld;
       void main() {
-        float fresnel = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.1);
-        gl_FragColor = vec4(0.96, 0.91, 0.78, fresnel * strength);
+        float fresnel = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.35);
+        float band = exp(-pow((vWorld.y - sweepY) * 10.0, 2.0));
+        float rim = fresnel * strength + veil;
+        gl_FragColor = vec4(mix(tint, vec3(0.94, 0.88, 0.74), band * 0.45), rim + band * fresnel * 0.35);
       }
     `,
   });
@@ -519,49 +410,83 @@ function makeStation(figure, texture, spot, shadowMap) {
   plinth.receiveShadow = true;
   group.add(plinth);
 
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(0.32, 0.012, 20, 96),
-    new THREE.MeshPhysicalMaterial({
-      color: 0xd7bc86,
-      metalness: 1,
-      roughness: 0.18,
-      clearcoat: 0.4,
-      emissive: 0x3a2c14,
-      emissiveIntensity: 0.25,
-    }),
-  );
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = 0.65;
-  group.add(ring);
+  const organHeight = 0.68;
+  const organWidth = organHeight * (texture.userData.aspect || 0.85);
+  const shellRadius = Math.min(0.5, Math.max(0.4, organWidth * 0.58 + 0.08));
+  const shellBase = 0.64;
+  const shellHeight = organHeight + 0.36;
+  const glowMaterial = () => new THREE.MeshBasicMaterial({
+    color: 0xc6a56a,
+    transparent: true,
+    opacity: 0.14,
+    depthWrite: false,
+  });
+  const ringMaterial = () => new THREE.MeshBasicMaterial({ color: 0xc6a56a });
 
-  const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.7, 64, 1, true), glassShell(0.1));
-  glass.position.set(0, 1.02, 0);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(shellRadius + 0.05, 0.008, 12, 80), ringMaterial());
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = shellBase;
+  group.add(ring);
+  const footGlow = new THREE.Mesh(new THREE.TorusGeometry(shellRadius + 0.05, 0.03, 10, 64), glowMaterial());
+  footGlow.rotation.x = Math.PI / 2;
+  footGlow.position.y = shellBase;
+  group.add(footGlow);
+  const pool = new THREE.Mesh(
+    new THREE.CircleGeometry(shellRadius * 0.86, 40),
+    new THREE.MeshBasicMaterial({ color: 0xc6a56a, transparent: true, opacity: 0.08, depthWrite: false }),
+  );
+  pool.rotation.x = -Math.PI / 2;
+  pool.position.y = shellBase + 0.012;
+  group.add(pool);
+
+  const glass = new THREE.Mesh(
+    new THREE.CylinderGeometry(shellRadius, shellRadius, shellHeight, 64, 1, true),
+    glassShell(0.38, [0.94, 0.88, 0.74], 0.006),
+  );
+  glass.position.set(0, shellBase + shellHeight / 2, 0);
+  glass.renderOrder = 3;
   glass.raycast = () => {};
   group.add(glass);
 
-  const organHeight = 0.68;
-  const organWidth = organHeight * (texture.userData.aspect || 0.85);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(shellRadius, 0.007, 10, 80), ringMaterial());
+  lip.rotation.x = Math.PI / 2;
+  lip.position.y = shellBase + shellHeight;
+  group.add(lip);
+  const lipGlow = new THREE.Mesh(new THREE.TorusGeometry(shellRadius, 0.026, 10, 64), glowMaterial());
+  lipGlow.rotation.x = Math.PI / 2;
+  lipGlow.position.y = shellBase + shellHeight;
+  group.add(lipGlow);
+
+  const stationLamp = new THREE.PointLight(0xe6d3a4, 0.28, 1.6, 2);
+  stationLamp.position.set(0, shellBase + 0.12, 0.22);
+  group.add(stationLamp);
+
   const organ = new THREE.Mesh(curvedPlane(organWidth, organHeight, 0.028), specimenMaterial(texture));
   organ.position.set(0, 0.68 + organHeight / 2, 0.02);
   organ.castShadow = true;
   group.add(organ);
 
-  const boardX = organWidth / 2 + 0.4;
-  const boardHeight = 0.64;
-  const boardY = boardHeight / 2 + 0.008;
+  const boardHeight = 0.72;
+  const boardWidth = boardHeight * (1024 / 1280);
+  const boardX = Math.max(shellRadius, organWidth / 2) + boardWidth / 2 + 0.06;
+  const placard = new THREE.Group();
+  placard.position.set(boardX, 0.02, 0.42);
   const backing = new THREE.Mesh(
-    new THREE.BoxGeometry(0.54, boardHeight + 0.02, 0.04),
-    new THREE.MeshPhysicalMaterial({ color: 0x12141a, metalness: 0.3, roughness: 0.42, clearcoat: 0.25 }),
+    new THREE.BoxGeometry(boardWidth + 0.03, boardHeight + 0.03, 0.03),
+    new THREE.MeshPhysicalMaterial({ color: 0x10161a, metalness: 0.2, roughness: 0.45, clearcoat: 0.3 }),
   );
-  backing.position.set(boardX, boardY, 0.72);
-  group.add(backing);
+  backing.position.set(0, boardHeight / 2, -0.02);
+  placard.add(backing);
 
   const board = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.5, boardHeight),
-    new THREE.MeshBasicMaterial({ map: drawBoard(figure), transparent: true, depthWrite: true }),
+    new THREE.PlaneGeometry(boardWidth, boardHeight),
+    new THREE.MeshBasicMaterial({ map: drawBoard(figure), toneMapped: false }),
   );
-  board.position.set(boardX, boardY, 0.78);
-  group.add(board);
+  board.position.set(0, boardHeight / 2, 0.01);
+  placard.add(board);
+  group.add(placard);
+  group.updateMatrixWorld(true);
+  placard.lookAt(0, 1.45, CAM_Z);
 
   const shadow = new THREE.Mesh(
     new THREE.CircleGeometry(0.46, 32),
@@ -577,8 +502,11 @@ function makeStation(figure, texture, spot, shadowMap) {
   });
   glass.userData.station = null;
   shadow.userData.station = null;
+  footGlow.userData.station = null;
+  lipGlow.userData.station = null;
+  pool.userData.station = null;
   organ.userData.baseY = organ.position.y;
-  return { group, ring, organ, glass };
+  return { group, ring, lip, organ, glass, footGlow, lipGlow };
 }
 
 export function mountMuseum(canvas, { figures, onPick }) {
@@ -605,7 +533,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
     new THREE.CircleGeometry(12, 96),
     new THREE.MeshPhysicalMaterial({
       map: galleryFloor(),
-      color: 0xd9cbb8,
+      color: 0xd4c8b6,
       metalness: 0.16,
       roughness: 0.62,
       clearcoat: 0.28,
@@ -619,7 +547,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
 
   const inlay = new THREE.Mesh(
     new THREE.TorusGeometry(6.15, 0.012, 8, 160),
-    new THREE.MeshPhysicalMaterial({ color: 0xd4bc8a, metalness: 1, roughness: 0.22 }),
+    new THREE.MeshBasicMaterial({ color: 0xc6a56a }),
   );
   inlay.rotation.x = Math.PI / 2;
   inlay.position.y = 0.012;
@@ -650,8 +578,8 @@ export function mountMuseum(canvas, { figures, onPick }) {
   const fill = new THREE.DirectionalLight(0xcfc8bc, 0.38);
   fill.position.set(-4.8, 3.8, 3.4);
   scene.add(fill);
-  const lamp = new THREE.PointLight(0xe6d3a4, 0.55, 3.2, 2);
-  lamp.position.set(0.2, 1.7, 1.4);
+  const lamp = new THREE.PointLight(0xe6d3a4, 0.55, 2.6, 2);
+  lamp.position.set(0, 0.42, 0.55);
   scene.add(lamp);
 
   const stone = new THREE.MeshPhysicalMaterial({
@@ -661,50 +589,129 @@ export function mountMuseum(canvas, { figures, onPick }) {
     clearcoat: 0.72,
     clearcoatRoughness: 0.2,
   });
-  const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.84, 0.9, 0.26, 72), stone);
-  pedestal.position.y = 0.13;
+  const columnRadius = 0.66;
+  const columnBase = 0.24;
+  const columnHeight = 2.22;
+  const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.86, 0.94, 0.16, 72), stone);
+  pedestal.position.y = 0.1;
   pedestal.castShadow = true;
   pedestal.receiveShadow = true;
   scene.add(pedestal);
   const footRing = new THREE.Mesh(
-    new THREE.TorusGeometry(0.88, 0.012, 16, 96),
-    new THREE.MeshPhysicalMaterial({ color: 0xd4bc8a, metalness: 1, roughness: 0.16 }),
+    new THREE.TorusGeometry(columnRadius + 0.28, 0.014, 16, 120),
+    new THREE.MeshBasicMaterial({ color: 0xc6a56a }),
   );
   footRing.rotation.x = Math.PI / 2;
-  footRing.position.y = 0.27;
+  footRing.position.y = columnBase;
   scene.add(footRing);
+  const footGlow = new THREE.Mesh(
+    new THREE.TorusGeometry(columnRadius + 0.28, 0.055, 12, 80),
+    new THREE.MeshBasicMaterial({ color: 0xe6d3a4, transparent: true, opacity: 0.12, depthWrite: false }),
+  );
+  footGlow.rotation.x = Math.PI / 2;
+  footGlow.position.y = columnBase;
+  scene.add(footGlow);
 
-  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.08, 96, 1, true), glassShell(0.28));
-  tube.position.set(0, 1.34, 0);
-  tube.rotation.y = Math.PI;
-  tube.renderOrder = 3;
+  const tube = new THREE.Mesh(
+    new THREE.CylinderGeometry(columnRadius, columnRadius, columnHeight, 96, 1, true),
+    glassShell(0.42, [0.94, 0.88, 0.74], 0.005),
+  );
+  tube.position.set(0, columnBase + columnHeight / 2, 0);
+  tube.renderOrder = 4;
   tube.raycast = () => {};
   scene.add(tube);
+  const scanRing = new THREE.Mesh(
+    new THREE.TorusGeometry(columnRadius + 0.008, 0.007, 12, 120),
+    new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+      uniforms: { opacity: { value: 0.85 } },
+      vertexShader: `
+        varying vec3 vWorld;
+        void main() {
+          vec4 world = modelMatrix * vec4(position, 1.0);
+          vWorld = world.xyz;
+          gl_Position = projectionMatrix * viewMatrix * world;
+        }
+      `,
+      fragmentShader: `
+        uniform float opacity;
+        varying vec3 vWorld;
+        void main() {
+          float wing = smoothstep(0.3, 0.52, abs(vWorld.x));
+          if (wing < 0.05) discard;
+          gl_FragColor = vec4(0.90, 0.82, 0.64, opacity * wing);
+        }
+      `,
+    }),
+  );
+  scanRing.rotation.x = Math.PI / 2;
+  scanRing.renderOrder = 5;
+  scanRing.raycast = () => {};
+  scene.add(scanRing);
 
   const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(0.76, 0.012, 16, 96),
-    new THREE.MeshBasicMaterial({ color: 0xefe8dc }),
+    new THREE.TorusGeometry(columnRadius - 0.02, 0.01, 12, 96),
+    new THREE.MeshBasicMaterial({ color: 0xc6a56a }),
   );
   halo.rotation.x = Math.PI / 2;
-  halo.position.set(0, 0.32, 0);
+  halo.position.set(0, columnBase + 0.012, 0);
   scene.add(halo);
   const haloSoft = new THREE.Mesh(
-    new THREE.TorusGeometry(0.9, 0.04, 12, 80),
-    new THREE.MeshBasicMaterial({ color: 0xc6a56a, transparent: true, opacity: 0.34, depthWrite: false }),
+    new THREE.CircleGeometry(columnRadius * 0.92, 64),
+    new THREE.MeshBasicMaterial({ color: 0xc6a56a, transparent: true, opacity: 0.08, depthWrite: false }),
   );
-  haloSoft.rotation.x = Math.PI / 2;
-  haloSoft.position.set(0, 0.31, 0);
+  haloSoft.rotation.x = -Math.PI / 2;
+  haloSoft.position.set(0, columnBase + 0.02, 0);
   scene.add(haloSoft);
   const lip = new THREE.Mesh(
-    new THREE.TorusGeometry(0.69, 0.008, 12, 80),
-    new THREE.MeshBasicMaterial({ color: 0xe6d3a4 }),
+    new THREE.TorusGeometry(columnRadius, 0.012, 12, 120),
+    new THREE.MeshBasicMaterial({ color: 0xc6a56a }),
   );
   lip.rotation.x = Math.PI / 2;
-  lip.position.set(0, 2.38, 0);
+  lip.position.set(0, columnBase + columnHeight, 0);
   scene.add(lip);
+  const lipGlow = new THREE.Mesh(
+    new THREE.TorusGeometry(columnRadius, 0.046, 12, 80),
+    new THREE.MeshBasicMaterial({ color: 0xe6d3a4, transparent: true, opacity: 0.14, depthWrite: false }),
+  );
+  lipGlow.rotation.x = Math.PI / 2;
+  lipGlow.position.y = columnBase + columnHeight;
+  scene.add(lipGlow);
+  const moteCount = 22;
+  const motePositions = new Float32Array(moteCount * 3);
+  const motes = Array.from({ length: moteCount }, (_, index) => {
+    const mote = {
+      angle: Math.random() * Math.PI * 2,
+      radius: 0.08 + Math.random() * (columnRadius * 0.62),
+      height: Math.random(),
+      speed: 0.045 + Math.random() * 0.07,
+    };
+    motePositions[index * 3] = Math.cos(mote.angle) * mote.radius;
+    motePositions[index * 3 + 1] = columnBase + mote.height * columnHeight;
+    motePositions[index * 3 + 2] = Math.sin(mote.angle) * mote.radius;
+    return mote;
+  });
+  const moteGeometry = new THREE.BufferGeometry();
+  moteGeometry.setAttribute("position", new THREE.BufferAttribute(motePositions, 3));
+  const moteField = new THREE.Points(
+    moteGeometry,
+    new THREE.PointsMaterial({
+      color: 0xe6d3a4,
+      size: 0.014,
+      transparent: true,
+      opacity: 0.35,
+      depthWrite: false,
+      sizeAttenuation: true,
+    }),
+  );
+  moteField.renderOrder = 5;
+  scene.add(moteField);
 
-  const bodyHeight = 1.98;
-  const bodyBase = 0.36;
+  const bodyHeight = 2.08;
+  const bodyBase = 0.32;
   const bodyWidth = bodyHeight * (720 / 1280);
   const figure = new THREE.Group();
   const body = new THREE.Mesh(
@@ -714,6 +721,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
       depthWrite: false,
       toneMapped: false,
       alphaTest: 0,
+      side: THREE.DoubleSide,
     }),
   );
   body.position.z = 0.02;
@@ -724,6 +732,8 @@ export function mountMuseum(canvas, { figures, onPick }) {
 
   const stations = [];
   const rings = [];
+  const lips = [];
+  const glows = [];
   const organs = [];
   const cases = [];
   const textures = [];
@@ -737,13 +747,12 @@ export function mountMuseum(canvas, { figures, onPick }) {
   const base = import.meta.env.BASE_URL;
   Promise.all([
     document.fonts.ready,
-    loadImage(`${base}img/anatomy-body.png`),
+    loadImage(`${base}img/museum-body.png`),
     ...figures.map((figure) => loadImage(`${base}img/figures/${figure.file}`)),
   ]).then((loaded) => {
     if (!alive) return;
     const [, bodyImage, ...organImages] = loaded;
     const bodyMap = knockOut(bodyImage);
-    plantFigure(bodyMap.image);
     bodyMap.needsUpdate = true;
     textures.push(bodyMap);
     body.material.map = bodyMap;
@@ -756,6 +765,8 @@ export function mountMuseum(canvas, { figures, onPick }) {
       scene.add(station.group);
       stations.push(station.group);
       rings.push(station.ring);
+      lips.push(station.lip);
+      glows.push(station.footGlow, station.lipGlow);
       organs.push(station.organ);
       cases.push(station.glass);
     });
@@ -816,18 +827,37 @@ export function mountMuseum(canvas, { figures, onPick }) {
 
     const pulse = 0.5 + 0.5 * Math.sin(t * 1.6);
     const beat = Math.pow(0.5 + 0.5 * Math.sin(t * 3.1), 2);
+    const sweep = reduce ? 0.58 : (t * 0.16) % 1;
     figure.scale.setScalar(1);
-    figure.rotation.y = 0;
+    figure.rotation.y = reduce ? 0 : Math.sin(t * 0.28) * 0.06;
     figure.position.y = bodyBase + bodyHeight / 2;
-    lamp.intensity = 0.4 + beat * 0.25;
-    lamp.position.x = reduce ? 0 : Math.sin(t * 0.9) * 0.34;
-    lamp.position.z = reduce ? 0.12 : Math.cos(t * 0.9) * 0.34;
-    halo.rotation.z = reduce ? 0 : t * 0.7;
-    halo.scale.setScalar(1 + beat * (reduce ? 0 : 0.12));
-    lip.rotation.z = reduce ? 0 : -t * 0.4;
-    footRing.rotation.z = reduce ? 0 : t * 0.25;
-    haloSoft.material.opacity = 0.12 + pulse * 0.45;
-    haloSoft.scale.setScalar(1 + pulse * (reduce ? 0 : 0.08));
+    const sweepY = columnBase + 0.08 + sweep * (columnHeight - 0.16);
+    tube.material.uniforms.sweepY.value = sweepY;
+    scanRing.position.y = sweepY;
+    scanRing.material.uniforms.opacity.value = 0.12 + Math.sin(sweep * Math.PI) * 0.22;
+    lamp.intensity = 0.4 + beat * 0.15;
+    lamp.position.x = reduce ? 0 : Math.sin(t * 0.7) * 0.18;
+    lamp.position.z = reduce ? 0.4 : 0.45 + Math.cos(t * 0.7) * 0.12;
+    halo.rotation.z = reduce ? 0 : t * 0.35;
+    lip.rotation.z = reduce ? 0 : -t * 0.22;
+    lipGlow.material.opacity = 0.08 + pulse * 0.06;
+    footRing.rotation.z = reduce ? 0 : t * 0.18;
+    footGlow.material.opacity = 0.07 + pulse * 0.05;
+    haloSoft.material.opacity = 0.04 + pulse * 0.04;
+    if (!reduce) {
+      const positions = moteGeometry.attributes.position;
+      motes.forEach((mote, index) => {
+        mote.height = (mote.height + mote.speed * 0.016) % 1;
+        mote.angle += 0.004;
+        positions.setXYZ(
+          index,
+          Math.cos(mote.angle) * mote.radius,
+          columnBase + 0.08 + mote.height * (columnHeight - 0.16),
+          Math.sin(mote.angle) * mote.radius,
+        );
+      });
+      positions.needsUpdate = true;
+    }
     organs.forEach((organ, index) => {
       const phase = t * 1.15 + index * 0.8;
       organ.position.y = organ.userData.baseY + (reduce ? 0 : Math.sin(phase) * 0.06);
@@ -837,12 +867,16 @@ export function mountMuseum(canvas, { figures, onPick }) {
       organ.material.emissiveIntensity = 0.02 + (reduce ? 0 : (0.5 + 0.5 * Math.sin(phase * 2)) * 0.1);
     });
     cases.forEach((glass, index) => {
-      if (!reduce) glass.rotation.y = t * 0.35 + index;
-      glass.material.uniforms.strength.value = 0.06 + (reduce ? 0 : (0.5 + 0.5 * Math.sin(t * 1.8 + index)) * 0.14);
+      glass.material.uniforms.strength.value = 0.34 + (reduce ? 0 : Math.sin(t * 1.5 + index) * 0.05);
     });
     rings.forEach((ring, index) => {
-      if (!reduce) ring.rotation.z = t * (0.55 + index * 0.04);
-      ring.material.emissiveIntensity = 0.15 + Math.sin(t * 2.2 + index) * (reduce ? 0 : 0.4);
+      if (!reduce) ring.rotation.z = t * (0.18 + index * 0.015);
+    });
+    lips.forEach((lip, index) => {
+      if (!reduce) lip.rotation.z = -t * (0.14 + index * 0.012);
+    });
+    glows.forEach((glow, index) => {
+      glow.material.opacity = 0.07 + pulse * 0.05 + (reduce ? 0 : Math.sin(t * 1.6 + index) * 0.02);
     });
     renderer.render(scene, camera);
   }

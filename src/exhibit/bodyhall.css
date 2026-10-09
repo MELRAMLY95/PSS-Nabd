@@ -473,6 +473,24 @@
   background: color-mix(in srgb, var(--color-ink-2) 90%, transparent);
 }
 
+.hul-approach .hul-label,
+.hul-approach .hul-kicker,
+.hul-approach .hul-back-link,
+.hul-approach .hul-state {
+  color: var(--color-sand);
+}
+
+.hul-approach .hul-state { color: var(--color-sand) !important; }
+
+.hul-approach .nabd-work { border-top-color: var(--color-line); }
+.hul-approach .nabd-meter-row b::before { background: var(--color-bio); }
+.hul-approach .instrument input { accent-color: var(--color-sand); }
+.hul-approach .nabd-switch.is-on {
+  background: var(--color-bio);
+  border-color: var(--color-bio);
+  color: var(--color-ink);
+}
+
 .hul-kicker {
   display: flex;
   gap: 0.5rem;
@@ -482,6 +500,7 @@
 
 .hul-approach h2 {
   margin: 0.35rem 0 0.8rem;
+  color: var(--color-bone);
   font-size: clamp(2.2rem, 4vw, 3.6rem);
   line-height: 1;
 }

@@ -1,142 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { EXHIBITS, ORGANS as LAB_ORGANS } from "../lab/content.js";
-import { INITIAL, simulate } from "../lab/engine.js";
-import { Workbench } from "../lab/Exhibit.jsx";
+import { useEffect, useState } from "react";
 import { Body } from "./Body.jsx";
-import { STAGES, colorFor, previewOrgans, stageFor, toneClass, toneMark } from "./engine.js";
+import { STAGES, previewOrgans, toneClass, toneMark } from "./engine.js";
 import { Header } from "./Header.jsx";
 import { sitePath } from "./site.js";
-
-const ORGANS = [
-  {
-    id: "brain",
-    name: "The Brain",
-    system: "Decision intelligence",
-    role: "Intelligence & decision-making",
-    message: "Green skills control the future, just as the brain controls the body.",
-    insight: "Many signals, one revised decision.",
-    inspiration: "Sense, compare, decide, then change the decision.",
-    challenge: "Heat, water and energy planned as separate problems.",
-    path: "A thinking layer that retimes demand. It does not create the resource.",
-    impact: "People, policy and intelligent systems decide together. Technology alone is not the brain.",
-    principle: "The brain receives signals from every part of the body and coordinates a single response.",
-    technology: "A central intelligence layer that reads water, energy, temperature and waste data and decides where resources are most urgently needed.",
-    monitors: ["Water availability", "Energy demand", "Temperature", "Waste levels", "Consumption"],
-    oman: "Data-led planning for a more innovative, knowledge-based economy.",
-  },
-  {
-    id: "heart",
-    name: "The Heart",
-    system: "Clean energy",
-    role: "Resource circulation",
-    message: "The future needs energy that powers life without damaging the systems that sustain life.",
-    insight: "A continuous pump, with rhythm and storage in the flow.",
-    inspiration: "Generate cleanly, hold surplus, send it where the load is.",
-    challenge: "Every other invention stops if the energy that feeds it causes harm.",
-    path: "Clean energy that powers recovery, exchange, cooling and circulation.",
-    impact: "Survival is the minimum. This energy is meant to let a society strive, enjoy and develop, without putting a later generation at risk.",
-    principle: "The heart and blood vessels deliver resources according to the body’s needs.",
-    technology: "A circulation network that keeps water, energy and recovered materials flowing to where they are needed instead of being supplied once and lost.",
-    monitors: ["Flow rates", "Distribution balance", "Food & material supply"],
-    oman: "Resources should flow through a system, not into a system and disappear.",
-  },
-  {
-    id: "blood",
-    name: "Blood",
-    system: "Resource flow",
-    role: "Circulation of water, energy, food and materials",
-    message: "A healthy future depends on circulation, not isolated systems.",
-    insight: "Blood carries supply, signals and waste between every tissue.",
-    inspiration: "Connect the streams, then move them toward the place under stress.",
-    challenge: "A city can hold water in one sector and a shortage in another.",
-    path: "One circulation for resources that already exist. It does not create them.",
-    impact: "In the model a shortage can ease when the streams are allowed to meet. That is a simulation assumption, not a measured national flow.",
-    principle: "Blood carries oxygen, nutrients, signals and waste so one part of the body can supply another.",
-    technology: "A circulation layer for water, energy, food, materials and recoverable waste. The heart’s clean energy is what keeps that flow moving.",
-    monitors: ["Where demand is short", "What can be moved", "What must not be interrupted"],
-    oman: "Sectors that never meet cannot answer a shortage somewhere else in the country.",
-  },
-  {
-    id: "kidneys",
-    name: "The Kidneys",
-    system: "Water intelligence",
-    role: "Selective water recovery",
-    message: "Water security depends on systems that filter, regulate and reuse — just like kidneys.",
-    insight: "Filter, take back what is still useful, release a smaller remainder.",
-    inspiration: "Do not treat every used drop as waste.",
-    challenge: "Water used once is often lost in a region that cannot afford to lose it.",
-    path: "Selective recovery: useful water returns, a concentrate leaves, and the recovery spends energy.",
-    impact: "The model shows recovered water and the energy that recovery draws. Those readings are assumptions, not a measured saving.",
-    principle: "Kidneys don’t remove everything — they carefully decide what to keep and what to remove.",
-    technology: "A selective recovery system that separates used water into reusable water, recoverable materials and concentrated waste.",
-    monitors: ["Water quality", "Recovery rate", "Brine & residue"],
-    oman: "Water security for one of the most water-stressed regions on Earth.",
-  },
-  {
-    id: "lungs",
-    name: "The Lungs",
-    system: "Air exchange",
-    role: "Air & carbon management",
-    message: "Exchange must stay balanced, or the whole system suffers.",
-    insight: "A vast folded surface, with air moving across it.",
-    inspiration: "Exchange across a large surface, and change the exchange when the air changes.",
-    challenge: "Dust, humidity and fouled air in a hot city.",
-    path: "An exchange surface for air that has to be renewed. It is not a waste organ, and it does not claim to clean a city.",
-    impact: "Raised dust or still air weakens the exchange in the model. The lung-inspired surface resists that. It does not erase it.",
-    principle: "A vast exchange surface folded into a compact space makes the lungs extremely efficient.",
-    technology: "High-surface-area exchange systems — from mangroves to green corridors — that monitor air quality, CO₂ and emissions and respond to them.",
-    monitors: ["Air quality", "Carbon dioxide", "Emissions"],
-    oman: "Cleaner cities and progress toward Oman’s net-zero ambitions.",
-  },
-  {
-    id: "skin",
-    name: "The Skin",
-    system: "Climate envelope",
-    role: "Protection & temperature regulation",
-    message: "Protection and temperature control are essential for survival in extreme climates.",
-    insight: "An outer layer that changes how much heat it lets through.",
-    inspiration: "A responding skin, not a fixed shell.",
-    challenge: "Cooling is what makes extreme heat expensive.",
-    path: "An outer layer for houses that is less open to summer heat, so the building asks less of air conditioning.",
-    impact: "No share of energy saved is claimed. In the model, heat getting in and cooling demand fall when the layer responds. That fall is a simulation assumption.",
-    principle: "Skin protects the body and constantly helps keep its internal temperature stable.",
-    technology: "An adaptive outer layer for buildings: more cooling and shading when it is hot, less when it is not — instead of running at maximum all the time.",
-    monitors: ["Temperature", "Sunlight intensity", "Cooling load"],
-    oman: "Designed for Oman’s extreme heat, where cooling drives energy demand.",
-  },
-  {
-    id: "liver",
-    name: "The Liver",
-    system: "Circular waste",
-    role: "Waste transformation",
-    message: "In a healthy system, waste is managed before it becomes poison.",
-    insight: "Sort, transform, recover, and let only the true remainder leave.",
-    inspiration: "Detoxify by changing the material, not by hiding it.",
-    challenge: "Mixed waste accumulates, and hazardous material cannot be wished away.",
-    path: "Use, separate, transform, recover, reuse — a hope of zero waste, with hazardous material still named.",
-    impact: "Nothing here is a measured diversion rate. The model only shows a stream being split into recovery and remainder.",
-    principle: "The liver processes and detoxifies harmful substances so the body can use or remove them.",
-    technology: "A waste stream that is separated into useful and unusable parts — compost, biogas and recovered materials — so waste becomes a resource.",
-    monitors: ["Waste volume", "Separation quality", "Recovered material"],
-    oman: "A circular economy that reduces landfill and creates new industries.",
-  },
-  {
-    id: "skeleton",
-    name: "The Skeleton",
-    system: "Resilient infrastructure",
-    role: "Structure, support and long-term stability",
-    message: "No living system can function without strong, intelligent support.",
-    insight: "Bone shares a load. One point is not asked to hold the body.",
-    inspiration: "Distribute stress through a frame instead of thickening a single member.",
-    challenge: "Heat and structural demand arrive together on buildings, transport and infrastructure.",
-    path: "A frame that shares load. The same stress reads lower in the model when it is shared.",
-    impact: "This is a study of the logic, not a structural certificate. Raise the load or the heat and the stress climbs again.",
-    principle: "The skeleton gives the body structure, support and the ability to keep standing as stress changes.",
-    technology: "Infrastructure that shares load across a frame — buildings, transport and the structure the other systems depend on — instead of concentrating stress in one place.",
-    monitors: ["Structural load", "Heat on the structure", "Where stress concentrates"],
-    oman: "The framework that has to hold every other sustainable system up, in heat, over decades.",
-  },
-];
 
 const VISION = [
   { title: "Environmental protection", text: "A system that protects ecosystems by consuming less and recovering more." },
@@ -214,24 +80,11 @@ function CycleWords({ cycle, onChoose }) {
 }
 
 export default function Home() {
-  const [health, setHealth] = useState(72);
-  const [selected, setSelected] = useState(null);
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [cycle, setCycle] = useState(0);
   const [cycleLive, setCycleLive] = useState(true);
   const [picked, setPicked] = useState("Resilience");
-  const stage = stageFor(health);
-  const organ = ORGANS.find((item) => item.id === selected) ?? null;
-  const exhibit = selected ? EXHIBITS[selected] : null;
-  const controls = LAB_ORGANS.find((item) => item.id === selected)?.controls ?? [];
-  const [local, setLocal] = useState(() => ({ ...INITIAL, systems: { ...INITIAL.systems, kidneys: true } }));
-  const played = useMemo(() => simulate(local), [local]);
-  const bare = useMemo(() => simulate({ ...local, systems: { ...INITIAL.systems } }), [local]);
-  useEffect(() => {
-    if (!selected) return;
-    setLocal({ ...INITIAL, systems: { ...INITIAL.systems, [selected]: true } });
-  }, [selected]);
   const pickedStage = STAGES.find((item) => item.name === picked) ?? STAGES[2];
 
   useEffect(() => {
@@ -253,84 +106,28 @@ export default function Home() {
 
   return (
     <div className="grain overflow-x-clip">
-      <div className={`nabd-first${selected ? " is-open" : ""}`}>
+      <div className="nabd-first">
       <Header />
       <section id="organs" className="nabd-install nabd-enter">
         <h1 className="nabd-hero-title font-display font-light uppercase">
-          What if Oman 2040 could <em className="nabd-shine font-normal text-bio">think</em>, <em className="nabd-shine font-normal text-sand">adapt</em> and <em className="nabd-shine font-normal text-bone">heal</em> like a human body?
+          What if Oman 2040<br />
+          could <em className="nabd-shine font-normal text-bio">think</em>, <em className="nabd-shine font-normal text-sand">adapt</em><br />
+          and <em className="nabd-shine font-normal text-bone">heal</em> like<br />
+          a human body?
         </h1>
         <div className="nabd-install-body">
-          <Body organs={previewOrgans(health)} health={health} selected={selected} onSelect={setSelected} className="h-auto w-full" />
-          <div className="mx-auto mt-3 max-w-sm">
-            <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-              <span>Body</span>
-              <span className={toneClass(stage.tone)}>{stage.name} · {health}</span>
-            </div>
-            <input
-              type="range"
-              min="5"
-              max="95"
-              value={health}
-              onChange={(event) => setHealth(Number(event.target.value))}
-              className="nabd-range mt-2 w-full"
-              style={{ background: `linear-gradient(90deg, ${colorFor(health)} ${((health - 5) / 90) * 100}%, var(--color-ink-3) ${((health - 5) / 90) * 100}%)` }}
-              aria-label="Preview system health"
-            />
+          <Body organs={previewOrgans(72)} health={72} className="nabd-hero-figure h-auto w-full" />
+        </div>
+        <div className="nabd-hero-copy">
+          <div className="nabd-hero-lead">
+            <p className="text-lg leading-relaxed text-mist">Nabd — Arabic for <span className="text-bone">pulse</span> — is a living system for Oman’s water, energy and waste.</p>
           </div>
-        </div>
-        <div className="nabd-organ-list" role="list">
-          {ORGANS.map((item) => (
-            <button key={item.id} type="button" role="listitem" data-organ={item.id} aria-pressed={selected === item.id} onClick={() => setSelected(item.id)}>
-              {(item.id === "heart" || item.id === "skin") && <i className="nabd-cue" aria-hidden="true" />}
-              {item.name.replace("The ", "")}
-            </button>
-          ))}
-        </div>
-        <div>
-          {organ && exhibit ? (
-            <article key={organ.id}>
-              <button type="button" onClick={() => setSelected(null)} className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim hover:text-bone">← The living planet</button>
-              <p className="mt-5 font-mono text-xs uppercase tracking-[0.22em] text-sand">{organ.name}</p>
-              <h2 className="mt-2 font-display text-4xl font-light leading-tight md:text-5xl">{organ.system}</h2>
-              <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.2em] text-bio">The technology</p>
-              <p className="mt-3 max-w-xl text-lg leading-relaxed text-bone">{organ.technology}</p>
-              <p className="mt-4 max-w-xl leading-relaxed text-mist">{exhibit.invention}</p>
-              <p className="mt-6 max-w-xl leading-relaxed text-mist"><span className="text-bone">From the organ. </span>{organ.principle}</p>
-              <p className="mt-3 max-w-xl leading-relaxed text-mist"><span className="text-sand">For Oman. </span>{organ.oman}</p>
-              {exhibit.beyond && <p className="mt-4 max-w-xl leading-relaxed text-bone">{exhibit.beyond}</p>}
-              <details className="nabd-fold max-w-xl">
-                <summary>Try the model</summary>
-                <div className="mt-4">
-                  <Workbench
-                    organId={organ.id}
-                    controls={controls}
-                    result={played}
-                    bare={bare}
-                    local={local}
-                    onChange={(key, value) => setLocal((state) => ({ ...state, [key]: value }))}
-                    onToggle={() => setLocal((state) => ({ ...state, systems: { ...state.systems, [organ.id]: !state.systems[organ.id] } }))}
-                  />
-                </div>
-              </details>
-            </article>
-          ) : (
-            <div className="nabd-hero-copy">
-              <div className="nabd-hero-lead">
-                <p className="font-mono text-xs uppercase tracking-[0.28em] text-sand">A biomimetic sustainability system · Oman Vision 2040</p>
-                <p className="text-lg leading-relaxed text-mist">
-                  Nabd — Arabic for <span className="text-bone">pulse</span> — is a self-regulating resource system for water, energy and waste. Press an organ. The technology it inspired opens here.
-                </p>
-                <p className="text-lg leading-relaxed text-mist">Surviving is the minimum. The aim is to keep developing — with comfort, innovation and prosperity — while harm to any generation is not part of the plan.</p>
-              </div>
-              <div className="nabd-hero-close">
-                <div className="flex flex-wrap gap-3">
-                  <a href={sitePath("/experience")} className="rounded-full bg-bio px-6 py-3 font-semibold text-ink">Play — become the brain</a>
-                  <a href={sitePath("/body")} className="rounded-full border border-line px-6 py-3 text-bone hover:border-bone">The Human Body</a>
-                  <a href="#concept" className="rounded-full border border-line px-6 py-3 text-mist hover:border-bone hover:text-bone">How it works</a>
-                </div>
-              </div>
+          <div className="nabd-hero-close">
+            <div className="flex flex-wrap gap-3">
+              <a href={sitePath("/experience")} className="rounded-full bg-bio px-6 py-3 font-semibold text-ink">Play — become the brain</a>
+              <a href={sitePath("/body")} className="rounded-full border border-line px-6 py-3 text-bone hover:border-bone">The Human Body</a>
             </div>
-          )}
+          </div>
         </div>
       </section>
       </div>
