@@ -3,6 +3,8 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 const CAM_Z = 10.6;
 
+const ORDER = ["brain", "lungs", "heart", "skin", "liver", "kidneys", "digestive", "skeleton"];
+
 const BACK = [
   { id: "brain", x: -4.45, z: -1.05 },
   { id: "lungs", x: -2.9, z: -1.55 },
@@ -141,16 +143,16 @@ function drawBoard(figure) {
   ctx.fillStyle = sheen;
   ctx.fillRect(0, 0, canvas.width, 280);
 
+  const number = String(ORDER.indexOf(figure.id) + 1).padStart(2, "0");
+  const markY = 96;
+  ctx.fillStyle = "#c6a56a";
+  ctx.font = "600 28px 'JetBrains Mono', monospace";
+  ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.strokeStyle = "#c6a56a";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(pad + 28, 92, 26, 0, Math.PI * 2);
-  ctx.stroke();
-
+  ctx.fillText(number, pad, markY);
   ctx.fillStyle = "#efe8dc";
   ctx.font = "600 54px 'Instrument Sans', sans-serif";
-  ctx.fillText(figure.name, pad + 72, 92);
+  ctx.fillText(figure.name, pad + 64, markY);
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "#e4ddd0";
   ctx.font = "500 42px Fraunces, Georgia, serif";
@@ -179,23 +181,20 @@ function drawBoard(figure) {
   });
 
   const barY = 1168;
-  const strip = ctx.createLinearGradient(pad, 0, pad + 760, 0);
+  const strip = ctx.createLinearGradient(pad, 0, pad + inner, 0);
   strip.addColorStop(0, "#6a5438");
   strip.addColorStop(0.55, "#c6a56a");
   strip.addColorStop(1, "#e6d3a4");
   ctx.fillStyle = strip;
-  roundRect(ctx, pad, barY, 760, 64, 12);
+  roundRect(ctx, pad, barY, inner, 64, 12);
   ctx.fill();
-  ctx.strokeStyle = "rgba(239,232,220,0.55)";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(canvas.width - pad - 22, barY + 32, 22, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.fillStyle = "#efe8dc";
-  ctx.font = "500 32px 'Instrument Sans', sans-serif";
+  ctx.fillStyle = "#1a140c";
+  ctx.font = "600 26px 'JetBrains Mono', monospace";
+  ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.textAlign = "center";
-  ctx.fillText("→", canvas.width - pad - 22, barY + 34);
+  ctx.fillText("SELECT", pad + 28, barY + 32);
+  ctx.textAlign = "right";
+  ctx.fillText(number, pad + inner - 28, barY + 32);
   ctx.textAlign = "left";
 
   const texture = canvasTexture(canvas);
@@ -415,29 +414,6 @@ function makeStation(figure, texture, spot, shadowMap) {
   const shellRadius = Math.min(0.5, Math.max(0.4, organWidth * 0.58 + 0.08));
   const shellBase = 0.64;
   const shellHeight = organHeight + 0.36;
-  const glowMaterial = () => new THREE.MeshBasicMaterial({
-    color: 0xc6a56a,
-    transparent: true,
-    opacity: 0.14,
-    depthWrite: false,
-  });
-  const ringMaterial = () => new THREE.MeshBasicMaterial({ color: 0xc6a56a });
-
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(shellRadius + 0.05, 0.008, 12, 80), ringMaterial());
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = shellBase;
-  group.add(ring);
-  const footGlow = new THREE.Mesh(new THREE.TorusGeometry(shellRadius + 0.05, 0.03, 10, 64), glowMaterial());
-  footGlow.rotation.x = Math.PI / 2;
-  footGlow.position.y = shellBase;
-  group.add(footGlow);
-  const pool = new THREE.Mesh(
-    new THREE.CircleGeometry(shellRadius * 0.86, 40),
-    new THREE.MeshBasicMaterial({ color: 0xc6a56a, transparent: true, opacity: 0.08, depthWrite: false }),
-  );
-  pool.rotation.x = -Math.PI / 2;
-  pool.position.y = shellBase + 0.012;
-  group.add(pool);
 
   const glass = new THREE.Mesh(
     new THREE.CylinderGeometry(shellRadius, shellRadius, shellHeight, 64, 1, true),
@@ -447,15 +423,6 @@ function makeStation(figure, texture, spot, shadowMap) {
   glass.renderOrder = 3;
   glass.raycast = () => {};
   group.add(glass);
-
-  const lip = new THREE.Mesh(new THREE.TorusGeometry(shellRadius, 0.007, 10, 80), ringMaterial());
-  lip.rotation.x = Math.PI / 2;
-  lip.position.y = shellBase + shellHeight;
-  group.add(lip);
-  const lipGlow = new THREE.Mesh(new THREE.TorusGeometry(shellRadius, 0.026, 10, 64), glowMaterial());
-  lipGlow.rotation.x = Math.PI / 2;
-  lipGlow.position.y = shellBase + shellHeight;
-  group.add(lipGlow);
 
   const stationLamp = new THREE.PointLight(0xe6d3a4, 0.28, 1.6, 2);
   stationLamp.position.set(0, shellBase + 0.12, 0.22);
@@ -502,11 +469,8 @@ function makeStation(figure, texture, spot, shadowMap) {
   });
   glass.userData.station = null;
   shadow.userData.station = null;
-  footGlow.userData.station = null;
-  lipGlow.userData.station = null;
-  pool.userData.station = null;
   organ.userData.baseY = organ.position.y;
-  return { group, ring, lip, organ, glass, footGlow, lipGlow };
+  return { group, organ, glass };
 }
 
 export function mountMuseum(canvas, { figures, onPick }) {
@@ -597,20 +561,6 @@ export function mountMuseum(canvas, { figures, onPick }) {
   pedestal.castShadow = true;
   pedestal.receiveShadow = true;
   scene.add(pedestal);
-  const footRing = new THREE.Mesh(
-    new THREE.TorusGeometry(columnRadius + 0.28, 0.014, 16, 120),
-    new THREE.MeshBasicMaterial({ color: 0xc6a56a }),
-  );
-  footRing.rotation.x = Math.PI / 2;
-  footRing.position.y = columnBase;
-  scene.add(footRing);
-  const footGlow = new THREE.Mesh(
-    new THREE.TorusGeometry(columnRadius + 0.28, 0.055, 12, 80),
-    new THREE.MeshBasicMaterial({ color: 0xe6d3a4, transparent: true, opacity: 0.12, depthWrite: false }),
-  );
-  footGlow.rotation.x = Math.PI / 2;
-  footGlow.position.y = columnBase;
-  scene.add(footGlow);
 
   const tube = new THREE.Mesh(
     new THREE.CylinderGeometry(columnRadius, columnRadius, columnHeight, 96, 1, true),
@@ -620,66 +570,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
   tube.renderOrder = 4;
   tube.raycast = () => {};
   scene.add(tube);
-  const scanRing = new THREE.Mesh(
-    new THREE.TorusGeometry(columnRadius + 0.008, 0.007, 12, 120),
-    new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      toneMapped: false,
-      uniforms: { opacity: { value: 0.85 } },
-      vertexShader: `
-        varying vec3 vWorld;
-        void main() {
-          vec4 world = modelMatrix * vec4(position, 1.0);
-          vWorld = world.xyz;
-          gl_Position = projectionMatrix * viewMatrix * world;
-        }
-      `,
-      fragmentShader: `
-        uniform float opacity;
-        varying vec3 vWorld;
-        void main() {
-          float wing = smoothstep(0.3, 0.52, abs(vWorld.x));
-          if (wing < 0.05) discard;
-          gl_FragColor = vec4(0.90, 0.82, 0.64, opacity * wing);
-        }
-      `,
-    }),
-  );
-  scanRing.rotation.x = Math.PI / 2;
-  scanRing.renderOrder = 5;
-  scanRing.raycast = () => {};
-  scene.add(scanRing);
 
-  const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(columnRadius - 0.02, 0.01, 12, 96),
-    new THREE.MeshBasicMaterial({ color: 0xc6a56a }),
-  );
-  halo.rotation.x = Math.PI / 2;
-  halo.position.set(0, columnBase + 0.012, 0);
-  scene.add(halo);
-  const haloSoft = new THREE.Mesh(
-    new THREE.CircleGeometry(columnRadius * 0.92, 64),
-    new THREE.MeshBasicMaterial({ color: 0xc6a56a, transparent: true, opacity: 0.08, depthWrite: false }),
-  );
-  haloSoft.rotation.x = -Math.PI / 2;
-  haloSoft.position.set(0, columnBase + 0.02, 0);
-  scene.add(haloSoft);
-  const lip = new THREE.Mesh(
-    new THREE.TorusGeometry(columnRadius, 0.012, 12, 120),
-    new THREE.MeshBasicMaterial({ color: 0xc6a56a }),
-  );
-  lip.rotation.x = Math.PI / 2;
-  lip.position.set(0, columnBase + columnHeight, 0);
-  scene.add(lip);
-  const lipGlow = new THREE.Mesh(
-    new THREE.TorusGeometry(columnRadius, 0.046, 12, 80),
-    new THREE.MeshBasicMaterial({ color: 0xe6d3a4, transparent: true, opacity: 0.14, depthWrite: false }),
-  );
-  lipGlow.rotation.x = Math.PI / 2;
-  lipGlow.position.y = columnBase + columnHeight;
-  scene.add(lipGlow);
   const moteCount = 22;
   const motePositions = new Float32Array(moteCount * 3);
   const motes = Array.from({ length: moteCount }, (_, index) => {
@@ -731,9 +622,6 @@ export function mountMuseum(canvas, { figures, onPick }) {
   scene.add(figure);
 
   const stations = [];
-  const rings = [];
-  const lips = [];
-  const glows = [];
   const organs = [];
   const cases = [];
   const textures = [];
@@ -764,9 +652,6 @@ export function mountMuseum(canvas, { figures, onPick }) {
       const station = makeStation(figure, map, spot, shadowMap);
       scene.add(station.group);
       stations.push(station.group);
-      rings.push(station.ring);
-      lips.push(station.lip);
-      glows.push(station.footGlow, station.lipGlow);
       organs.push(station.organ);
       cases.push(station.glass);
     });
@@ -825,7 +710,6 @@ export function mountMuseum(canvas, { figures, onPick }) {
     camera.position.y += (2.05 + bob + (reduce ? 0 : aimY) * 0.45 - camera.position.y) * 0.045;
     camera.lookAt(camera.position.x * 0.08, 0.58, 0);
 
-    const pulse = 0.5 + 0.5 * Math.sin(t * 1.6);
     const beat = Math.pow(0.5 + 0.5 * Math.sin(t * 3.1), 2);
     const sweep = reduce ? 0.58 : (t * 0.16) % 1;
     figure.scale.setScalar(1);
@@ -833,17 +717,9 @@ export function mountMuseum(canvas, { figures, onPick }) {
     figure.position.y = bodyBase + bodyHeight / 2;
     const sweepY = columnBase + 0.08 + sweep * (columnHeight - 0.16);
     tube.material.uniforms.sweepY.value = sweepY;
-    scanRing.position.y = sweepY;
-    scanRing.material.uniforms.opacity.value = 0.12 + Math.sin(sweep * Math.PI) * 0.22;
     lamp.intensity = 0.4 + beat * 0.15;
     lamp.position.x = reduce ? 0 : Math.sin(t * 0.7) * 0.18;
     lamp.position.z = reduce ? 0.4 : 0.45 + Math.cos(t * 0.7) * 0.12;
-    halo.rotation.z = reduce ? 0 : t * 0.35;
-    lip.rotation.z = reduce ? 0 : -t * 0.22;
-    lipGlow.material.opacity = 0.08 + pulse * 0.06;
-    footRing.rotation.z = reduce ? 0 : t * 0.18;
-    footGlow.material.opacity = 0.07 + pulse * 0.05;
-    haloSoft.material.opacity = 0.04 + pulse * 0.04;
     if (!reduce) {
       const positions = moteGeometry.attributes.position;
       motes.forEach((mote, index) => {
@@ -868,15 +744,6 @@ export function mountMuseum(canvas, { figures, onPick }) {
     });
     cases.forEach((glass, index) => {
       glass.material.uniforms.strength.value = 0.34 + (reduce ? 0 : Math.sin(t * 1.5 + index) * 0.05);
-    });
-    rings.forEach((ring, index) => {
-      if (!reduce) ring.rotation.z = t * (0.18 + index * 0.015);
-    });
-    lips.forEach((lip, index) => {
-      if (!reduce) lip.rotation.z = -t * (0.14 + index * 0.012);
-    });
-    glows.forEach((glow, index) => {
-      glow.material.opacity = 0.07 + pulse * 0.05 + (reduce ? 0 : Math.sin(t * 1.6 + index) * 0.02);
     });
     renderer.render(scene, camera);
   }

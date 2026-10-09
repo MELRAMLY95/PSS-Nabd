@@ -59,6 +59,142 @@ button.bg-ember {
   to { background-position: 48px 18px, -36px 22px, 0 0; }
 }
 
+.nabd-map-button {
+  pointer-events: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  color: var(--color-bone);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+}
+
+.nabd-map-button:hover,
+.nabd-map-button[aria-expanded="true"] {
+  border-color: var(--color-bio);
+  color: var(--color-bio);
+}
+
+.nabd-map {
+  width: min(42rem, calc(100vw - 1.5rem));
+  max-height: min(82svh, 44rem);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 1.4rem;
+  background: #101218;
+  color: var(--color-bone);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+}
+
+.nabd-map::backdrop {
+  background: rgba(7, 8, 12, 0.74);
+}
+
+.nabd-map-scroll {
+  padding: 1.35rem 1.35rem 1.6rem;
+}
+
+.nabd-map-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.nabd-map-kicker {
+  margin: 0;
+  color: var(--color-sand);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.nabd-map h2 {
+  margin: 0.35rem 0 0;
+  font-family: Fraunces, Georgia, serif;
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.nabd-map-close {
+  flex: none;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-mist);
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+.nabd-map-close:hover {
+  border-color: var(--color-bone);
+  color: var(--color-bone);
+}
+
+.nabd-map-lead {
+  margin: 0.9rem 0 0;
+  max-width: 38rem;
+  color: var(--color-mist);
+  line-height: 1.55;
+}
+
+.nabd-map-list {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nabd-map-list li {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(62, 58, 52, 0.85);
+}
+
+.nabd-map-list span {
+  color: var(--color-sand);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.nabd-map-list h3 {
+  margin: 0;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.nabd-map-list p {
+  margin: 0.3rem 0 0;
+  color: var(--color-mist);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.nabd-map-list a {
+  display: inline-block;
+  margin-top: 0.55rem;
+  color: var(--color-bio);
+  font-size: 0.92rem;
+  text-decoration: none;
+}
+
+.nabd-map-list a:hover {
+  color: var(--color-bone);
+}
+
 .nabd-beat {
   display: inline-block;
   align-self: center;

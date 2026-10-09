@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { startLabMusic } from "./labMusic.js";
 import { ORGANS as LAB_ORGANS } from "../lab/content.js";
 import { Workbench } from "../lab/Exhibit.jsx";
 import { INITIAL, simulate } from "../lab/engine.js";
+import { Roadmap } from "../nabd/Roadmap.jsx";
 import { sitePath } from "../nabd/site.js";
 import { mountMuseum } from "./museum.js";
 import "./bodyhall.css";
@@ -81,6 +83,30 @@ const FIGURES = [
   },
 ];
 
+function LabMusic() {
+  const [on, setOn] = useState(false);
+  const stopRef = useRef(null);
+
+  useEffect(() => () => stopRef.current?.(), []);
+
+  function toggle() {
+    if (stopRef.current) {
+      stopRef.current();
+      stopRef.current = null;
+      setOn(false);
+      return;
+    }
+    stopRef.current = startLabMusic();
+    setOn(true);
+  }
+
+  return (
+    <button type="button" className={`hul-music${on ? " is-on" : ""}`} aria-pressed={on} onClick={toggle}>
+      {on ? "Music on" : "Music off"}
+    </button>
+  );
+}
+
 function Mark({ id }) {
   const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.4, strokeLinecap: "round", strokeLinejoin: "round" };
   if (id === "lungs") return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="M12 4v6M8 10c-3 1-4 6-2 9 2-2 4-2 6-1M16 10c3 1 4 6 2 9-2-2-4-2-6-1" /></svg>;
@@ -138,7 +164,11 @@ export default function BodyHall() {
     <div className={`hul${figure ? " is-approached" : ""}`}>
       <nav className="hul-nav">
         <a href={sitePath("/")}>← Nabd</a>
-        <a href={sitePath("/experience")}>Become the brain</a>
+        <Roadmap />
+        <span className="hul-nav-end">
+          <LabMusic />
+          <a href={sitePath("/experience")}>Become the brain</a>
+        </span>
       </nav>
       <header className="hul-sign">
         <p>The body already keeps heat, water and waste in balance. We study those methods, and build them for Oman.</p>
