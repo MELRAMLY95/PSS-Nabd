@@ -26,6 +26,8 @@ export function organHealth(metrics) {
     kidneys: metrics.water,
     liver: 100 - metrics.waste,
     skin: 100 - metrics.heat,
+    blood: clamp(metrics.energy * 0.45 + metrics.water * 0.35 + metrics.food * 0.2),
+    skeleton: clamp(metrics.energy * 0.35 + (100 - metrics.heat) * 0.65),
   };
 }
 
@@ -66,11 +68,11 @@ export function toneMark(tone) {
 }
 
 export function colorFor(value) {
-  if (value >= 66) return "#3eefc0";
-  if (value >= 50) return "#c6e48a";
-  if (value >= 36) return "#f2c56a";
-  if (value >= 22) return "#ff7d55";
-  return "#ff5470";
+  if (value >= 66) return "#e6d3a4";
+  if (value >= 50) return "#c6a56a";
+  if (value >= 36) return "#b08968";
+  if (value >= 22) return "#e08a55";
+  return "#d4656a";
 }
 
 export const STRATEGIES = [
@@ -276,7 +278,7 @@ export function weakest(metrics) {
   return { key, value: wellness(key, metrics[key]) };
 }
 
-export const PREVIEW_OFFSET = { brain: 4, heart: 2, lungs: -3, kidneys: -8, liver: 3, skin: -5 };
+export const PREVIEW_OFFSET = { brain: 4, heart: 2, lungs: -3, kidneys: -8, liver: 3, skin: -5, blood: 1, skeleton: -2 };
 
 export function previewOrgans(health) {
   return Object.fromEntries(Object.keys(PREVIEW_OFFSET).map((key) => [key, clamp(health + PREVIEW_OFFSET[key])]));

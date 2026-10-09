@@ -58,7 +58,10 @@ export function Header({ variant = "home" }) {
           <span className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-mist md:inline">Live simulation · You are the brain</span>
         )}
         {variant === "home" ? (
-          <a href={sitePath("/experience")} className="rounded-full bg-bio px-4 py-2 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(75,227,180,0.5)]">Become the brain →</a>
+          <span className="flex items-center gap-3">
+            <a href={sitePath("/body")} className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-mist hover:text-bone sm:inline">The human body</a>
+            <a href={sitePath("/experience")} className="rounded-full bg-bio px-4 py-2 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(198,165,106,0.4)]">Become the brain →</a>
+          </span>
         ) : (
           <a href={sitePath("/")} className="rounded-full border border-line px-4 py-2 text-sm text-mist hover:border-bio hover:text-bio">← About the invention</a>
         )}

@@ -26,8 +26,46 @@ import {
 } from "./engine.js";
 import { Header } from "./Header.jsx";
 
-const PHASES = { sense: "Sense", decide: "Decide", distribute: "Distribute", recover: "Recover", adapt: "Adapt" };
-const ORGAN_COLOR = { brain: "#3eefc0", heart: "#ff5470", lungs: "#7eebda", kidneys: "#c6e48a", liver: "#f2c56a", skin: "#ff7d55" };
+function ratePlay(beforeMetrics, result, streak) {
+  const before = systemHealth(beforeMetrics);
+  const after = systemHealth(result.metrics);
+  const good = (result.synergies ?? []).filter((item) => item.good).length;
+  const bad = (result.synergies ?? []).filter((item) => !item.good).length;
+  const strain = (result.cascade ?? []).filter((step) => step.phase === "adapt" && step.tone === "bad" && !step.text.startsWith("Chain reaction") && !step.text.startsWith("Connected")).length;
+  const multiplier = 1 + Math.min(2, streak) * 0.5;
+  const gained = Math.round(((after - before) * 10 + good * 50 - bad * 30 - strain * 10) * multiplier);
+  return { before, after, good, bad, strain, multiplier, gained };
+}
+
+const RANKS = [
+  { xp: 0, name: "Observer" },
+  { xp: 80, name: "Analyst" },
+  { xp: 180, name: "Planner" },
+  { xp: 320, name: "Strategist" },
+  { xp: 480, name: "Living system" },
+];
+
+function progressFor(xp) {
+  let index = 0;
+  RANKS.forEach((rank, item) => {
+    if (xp >= rank.xp) index = item;
+  });
+  const current = RANKS[index];
+  const next = RANKS[index + 1];
+  const span = next ? next.xp - current.xp : 120;
+  return {
+    level: index + 1,
+    name: current.name,
+    fill: Math.min(100, ((xp - current.xp) / span) * 100),
+  };
+}
+const ORGAN_COLOR = { brain: "#c6a56a", heart: "#d4656a", lungs: "#c6a56a", kidneys: "#c6a56a", liver: "#c6a56a", skin: "#c6a56a" };
+const HAND = {
+  water: ["recovery", "desal", "solar", "conserve", "sensors", "grid"],
+  energy: ["solar", "skin", "grid", "diesel", "ac", "sensors"],
+  waste: ["biorefinery", "farms", "landfill", "greening", "recovery", "imports"],
+  failure: ["recovery", "solar", "skin", "biorefinery", "grid", "desal", "diesel", "greening"],
+};
 const ALERTS = [["Water availability", "↓"], ["Temperature", "↑"], ["Energy demand", "↑"], ["Waste", "↑"], ["Food security", "↓"]];
 
 function HealthChart({ points }) {
@@ -49,20 +87,20 @@ function HealthChart({ points }) {
       <svg viewBox={`0 0 ${width} ${height}`} className="h-auto w-full" role="img" aria-label="System health over time">
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3eefc0" stopOpacity="0.32" />
-            <stop offset="100%" stopColor="#3eefc0" stopOpacity="0" />
+            <stop offset="0%" stopColor="#e6d3a4" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="#e6d3a4" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0, 25, 50, 75, 100].map((tick) => (
           <g key={tick}>
-            <line x1={pad.l} x2={width - pad.r} y1={y(tick)} y2={y(tick)} stroke="#3d6d5e" strokeWidth="1" />
-            <text x={pad.l - 8} y={y(tick) + 3} textAnchor="end" fontSize="10" fill="#97b3a6" fontFamily="JetBrains Mono">{tick}</text>
+            <line x1={pad.l} x2={width - pad.r} y1={y(tick)} y2={y(tick)} stroke="#3e3a34" strokeWidth="1" />
+            <text x={pad.l - 8} y={y(tick) + 3} textAnchor="end" fontSize="10" fill="#8f897e" fontFamily="JetBrains Mono">{tick}</text>
           </g>
         ))}
         {guides.map((stage) => (
           <g key={stage.name}>
-            <line x1={pad.l} x2={width - pad.r} y1={y(stage.min)} y2={y(stage.min)} stroke="#d5e3db" strokeOpacity="0.35" strokeDasharray="2 4" />
-            <text x={width - pad.r} y={y(stage.min) - 4} textAnchor="end" fontSize="9" fill="#d5e3db" fontFamily="JetBrains Mono">{stage.name.toUpperCase()} {stage.min}</text>
+            <line x1={pad.l} x2={width - pad.r} y1={y(stage.min)} y2={y(stage.min)} stroke="#cfc8bc" strokeOpacity="0.35" strokeDasharray="2 4" />
+            <text x={width - pad.r} y={y(stage.min) - 4} textAnchor="end" fontSize="9" fill="#cfc8bc" fontFamily="JetBrains Mono">{stage.name.toUpperCase()} {stage.min}</text>
           </g>
         ))}
         {points.length > 1 && <path d={`${line} L${x(points.length - 1).toFixed(1)} ${(pad.t + innerH).toFixed(1)} L${x(0).toFixed(1)} ${(pad.t + innerH).toFixed(1)} Z`} fill={`url(#${fillId})`} />}
@@ -71,7 +109,7 @@ function HealthChart({ points }) {
         ))}
         {points.map((point, index) => (
           <g key={`${point.label}-${index}`}>
-            <circle cx={x(index)} cy={y(point.health)} r={hover === index ? 6 : 4} fill={colorFor(point.health)} stroke="#0b1a17" strokeWidth="2" />
+            <circle cx={x(index)} cy={y(point.health)} r={hover === index ? 6 : 4} fill={colorFor(point.health)} stroke="#101218" strokeWidth="2" />
             <rect
               x={x(index) - innerW / Math.max(points.length - 1, 1) / 2}
               y={pad.t}
@@ -85,10 +123,10 @@ function HealthChart({ points }) {
         ))}
         {points.map((point, index) => (
           index === 0 || index === points.length - 1 || points.length <= 5 ? (
-            <text key={`label-${point.label}`} x={x(index)} y={height - 12} textAnchor={index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"} fontSize="10" fill="#6c8079" fontFamily="JetBrains Mono">{point.label}</text>
+            <text key={`label-${point.label}`} x={x(index)} y={height - 12} textAnchor={index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"} fontSize="10" fill="#8f897e" fontFamily="JetBrains Mono">{point.label}</text>
           ) : null
         ))}
-        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + innerH} stroke="#a9b8b1" strokeOpacity="0.4" />}
+        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + innerH} stroke="#cfc8bc" strokeOpacity="0.4" />}
       </svg>
       {active && hover !== null && (
         <div className="pointer-events-none absolute -translate-x-1/2 rounded-lg border border-line bg-ink-3 px-3 py-2 font-mono text-xs shadow-xl" style={{ left: `${(x(hover) / width) * 100}%`, top: 0 }}>
@@ -116,7 +154,7 @@ function Intro({ names, setNames, onStart }) {
         <div>
           <p className="rise font-mono text-xs uppercase tracking-[0.3em] text-sand">Live simulation</p>
           <h1 className="rise mt-4 font-display text-5xl font-light leading-[1.02] md:text-7xl" style={{ animationDelay: "0.1s" }}>You are the <em className="text-bio">brain</em> of Oman 2040.</h1>
-          <p className="rise mt-6 max-w-xl text-lg text-mist" style={{ animationDelay: "0.2s" }}>You’ll receive real challenges, a limited budget and a deck of strategies. Every decision travels through the body — sense, decide, distribute, recover, adapt — and every decision has a consequence. There is no perfect single solution.</p>
+          <p className="rise mt-6 max-w-xl text-lg text-mist" style={{ animationDelay: "0.2s" }}>A shock hits the environment. Choose a decision, watch water, energy, heat and air respond, then apply it. Improving the environment earns XP. A decision that harms another system costs XP.</p>
           <ol className="rise mt-6 flex flex-wrap gap-2" style={{ animationDelay: "0.25s" }}>
             {[["2028", "Water"], ["2032", "Energy"], ["2036", "Waste"], ["2040", "Crisis"]].map(([year, label]) => (
               <li key={year} className={`rounded-full border px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] ${year === "2040" ? "border-ember/60 text-ember" : "border-line text-mist"}`}>{year} {label}</li>
@@ -125,14 +163,14 @@ function Intro({ names, setNames, onStart }) {
           <div className="rise mt-10 grid gap-4 md:grid-cols-2" style={{ animationDelay: "0.3s" }}>
             <div className="flex flex-col rounded-3xl border border-line bg-ink-2/70 p-6">
               <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-bio">Visitor journey</p>
-              <h2 className="mt-2 font-display text-2xl">Three challenges + the 2040 crisis</h2>
-              <p className="mt-2 flex-1 text-sm text-mist">2028 water surge, 2032 energy squeeze, 2036 waste growth — then the system fails in 2040. Decisions you make early shape how well the body survives.</p>
+              <h2 className="mt-2 font-display text-2xl">Four years, one XP bar</h2>
+              <p className="mt-2 flex-1 text-sm text-mist">Water, energy, waste, then the 2040 crisis. Each decision changes the environment. A streak of improvements raises the XP you earn.</p>
               <button type="button" onClick={() => onStart("solo")} className="mt-6 rounded-full bg-bio px-5 py-3 font-semibold text-ink transition hover:-translate-y-0.5">Start the journey</button>
             </div>
             <div className="flex flex-col rounded-3xl border border-ember/50 bg-ember/5 p-6">
               <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ember">Judging panel</p>
               <h2 className="mt-2 font-display text-2xl">2040: System failure</h2>
-              <p className="mt-2 text-sm text-mist">Straight to the crisis. Three judges, three decisions — and all three must agree on each one.</p>
+              <p className="mt-2 text-sm text-mist">Three judges. Three decisions. Agree, then stabilise the environment. The XP is the health you give back.</p>
               <div className="mt-4 grid gap-2">
                 {names.map((name, index) => (
                   <input key={index} value={name} maxLength={24} placeholder={`Judge ${index + 1} name (optional)`} onChange={(event) => setNames(names.map((item, itemIndex) => (itemIndex === index ? event.target.value : item)))} className="rounded-lg border border-line bg-ink px-3 py-2 text-sm text-bone placeholder:text-dim focus:border-ember focus:outline-none" />
@@ -143,7 +181,7 @@ function Intro({ names, setNames, onStart }) {
           </div>
         </div>
         <div className="rise mx-auto w-full max-w-[340px]" style={{ animationDelay: "0.2s" }}>
-          <Body organs={organHealth(BASE)} health={systemHealth(BASE)} labels className="h-auto w-full" />
+          <Body organs={organHealth(BASE)} health={systemHealth(BASE)} className="h-auto w-full" />
         </div>
       </main>
     </div>
@@ -222,7 +260,7 @@ function MetricList({ metrics, previous, ghost, focus, onFocus }) {
             <div className="nabd-track mt-1 h-1.5 overflow-hidden rounded-full bg-ink-3">
               <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: colorFor(wellness(key, value)) }} />
               {shift !== 0 && (
-                <span className="nabd-ghost" style={{ left: `${Math.min(value, projected)}%`, width: `${Math.abs(projected - value)}%`, background: helpful ? "#3eefc0" : "#ff7d55" }} />
+                <span className="nabd-ghost" style={{ left: `${Math.min(value, projected)}%`, width: `${Math.abs(projected - value)}%`, background: helpful ? "#e6d3a4" : "#e08a55" }} />
               )}
             </div>
           </>
@@ -245,7 +283,7 @@ function Timeline({ scenarios, round }) {
   return (
     <ol className="nabd-timeline flex gap-2">
       {scenarios.map((scenario, index) => (
-        <li key={scenario.id} className={`flex-1 rounded-full border px-3 py-1.5 text-center font-mono text-[11px] tracking-[0.14em] ${index === round ? (scenario.id === FAILURE.id ? "border-ember text-ember" : "border-bio text-bio") : index < round ? "border-line text-mist" : "border-line/50 text-dim"}`} style={{ background: index === round ? (scenario.id === FAILURE.id ? "#2a1612" : "#102820") : "#06100e" }}>
+        <li key={scenario.id} className={`flex-1 rounded-full border px-3 py-1.5 text-center font-mono text-[11px] tracking-[0.14em] ${index === round ? (scenario.id === FAILURE.id ? "border-ember text-ember" : "border-bio text-bio") : index < round ? "border-line text-mist" : "border-line/50 text-dim"}`} style={{ background: index === round ? (scenario.id === FAILURE.id ? "#2a1612" : "#1c1812") : "#07080c" }}>
           {index < round ? "✓ " : ""}{scenario.year}
         </li>
       ))}
@@ -266,9 +304,58 @@ function Budget({ total, spent }) {
   );
 }
 
+function effectLine(strategy) {
+  if (strategy.circulate) return "Supports the weakest part of the environment";
+  return formatEffects(strategy.effects);
+}
+
+function Environment({ metrics, preview }) {
+  const keys = ["water", "energy", "heat", "air", "waste", "food"];
+  return (
+    <div className="nabd-env" aria-label="Environment">
+      {keys.map((key) => {
+        const shown = preview ?? metrics;
+        const raw = shown[key] - metrics[key];
+        const helpful = METRICS[key].inverse ? raw < 0 : raw > 0;
+        const level = wellness(key, shown[key]);
+        return (
+          <p key={key}>
+            <span>{METRICS[key].short}</span>
+            <i><b style={{ width: `${level}%`, background: colorFor(level) }} /></i>
+            <em className={raw === 0 ? "" : helpful ? "is-up" : "is-down"}>{raw === 0 ? "" : helpful ? "up" : "down"}</em>
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function Move({ strategy, on, disabled, worth, onClick, onHover }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={on}
+      onMouseEnter={() => onHover?.(strategy.id)}
+      onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onHover?.(strategy.id)}
+      onBlur={() => onHover?.(null)}
+      className={`nabd-move${on ? " is-on" : ""}`}
+    >
+      <span className="nabd-move-organ">{strategy.organ}</span>
+      <span>
+        <b>{strategy.name}</b>
+        <em>{effectLine(strategy)}</em>
+      </span>
+      <span className={`nabd-move-worth${on || worth == null || worth === 0 ? "" : worth > 0 ? " is-up" : " is-down"}`}>{on ? "Chosen" : worth == null ? "" : `${worth > 0 ? "+" : ""}${worth} XP`}</span>
+    </button>
+  );
+}
+
 function Card({ strategy, on, disabled, quiet, intensity, installed, onClick, onHover }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} aria-pressed={on} onMouseEnter={() => onHover?.(strategy.id)} onMouseLeave={() => onHover?.(null)} onFocus={() => onHover?.(strategy.id)} onBlur={() => onHover?.(null)} className={`group flex flex-col rounded-2xl border border-t-[3px] p-4 text-left transition ${quiet ? "nabd-quiet" : ""} ${on ? "border-bio bg-bio/10 shadow-[0_0_24px_rgba(75,227,180,0.18)]" : disabled ? "cursor-not-allowed border-line/50 opacity-40" : "border-line bg-ink-2/60 hover:-translate-y-0.5 hover:border-mist"}`} style={{ borderTopColor: ORGAN_COLOR[strategy.organ] }}>
+    <button type="button" onClick={onClick} disabled={disabled} aria-pressed={on} onMouseEnter={() => onHover?.(strategy.id)} onMouseLeave={() => onHover?.(null)} onFocus={() => onHover?.(strategy.id)} onBlur={() => onHover?.(null)} className={`group flex flex-col rounded-2xl border border-t-[3px] p-4 text-left transition ${quiet ? "nabd-quiet" : ""} ${on ? "border-bio bg-bio/10" : disabled ? "cursor-not-allowed border-line/50 opacity-40" : "border-line bg-ink-2/60 hover:border-mist"}`} style={{ borderTopColor: ORGAN_COLOR[strategy.organ] }}>
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">{strategy.organ}{installed && <span className="text-sand"> · in place</span>}</span>
         <span className="flex gap-1" aria-label={`Costs ${strategy.cost}`}>
@@ -290,50 +377,30 @@ function Card({ strategy, on, disabled, quiet, intensity, installed, onClick, on
   );
 }
 
-function Cascade({ steps, revealed, held, onHold, onReplay }) {
-  if (!steps.length) return null;
-  return (
-    <div className="mt-6 rounded-2xl border border-line bg-ink/70 p-5 font-mono text-sm">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-dim">Signal through the body</p>
-        {revealed >= steps.length && (
-          <button type="button" onClick={onReplay} className="text-[11px] uppercase tracking-[0.16em] text-mist hover:text-bio">Replay</button>
-        )}
-      </div>
-      <ol className="mt-3 space-y-1.5">
-        {steps.slice(0, revealed).map((step, index) => (
-          <li key={`${step.text}-${index}`}>
-            <button type="button" onClick={() => onHold(index)} aria-pressed={held === index} className={`rise flex w-full gap-3 rounded-lg px-2 py-1 text-left transition hover:bg-ink-3 ${held === index || (held == null && index === revealed - 1) ? "nabd-now" : ""}`} style={{ animationDuration: "0.4s" }}>
-              <span className="w-24 shrink-0 text-[11px] uppercase tracking-[0.14em] text-dim">{PHASES[step.phase]}</span>
-              <span className={step.tone === "good" ? "text-bio" : step.tone === "bad" ? "text-ember" : "text-bone"}>{step.tone === "good" ? "● " : step.tone === "bad" ? "▲ " : ""}{step.text}</span>
-            </button>
-          </li>
-        ))}
-        {revealed < steps.length && <li className="animate-pulse text-dim">…</li>}
-      </ol>
-    </div>
-  );
-}
-
-function Response({ metrics, previous, done, isLast, nextIsFinal, onNext }) {
+function Response({ metrics, previous, score, done, isLast, nextIsFinal, onNext }) {
   const before = systemHealth(previous);
   const after = systemHealth(metrics);
   const weak = weakest(metrics);
+  const gained = score?.gained ?? 0;
   return (
-    <div className={`mt-6 rounded-3xl border border-line bg-ink-2/70 p-6 transition md:p-8 ${done ? "opacity-100" : "opacity-40"}`}>
-      <div className="flex flex-wrap items-baseline gap-4">
-        <p className="font-display text-3xl">Health {before} → <span className="text-bone">{after}</span></p>
-        <p className={`font-mono text-sm ${after >= before ? "text-bio" : "text-ember"}`}>{after >= before ? "▲" : "▼"} {Math.abs(after - before)} · {stageFor(before).name} → {stageFor(after).name}</p>
+    <div className="mt-6 rounded-3xl border border-line bg-ink-2/70 p-6 md:p-8">
+      <p className={`nabd-score ${gained >= 0 ? "text-bio" : "text-ember"}`}>{gained > 0 ? "+" : ""}{gained} XP</p>
+      <p className="mt-1 font-mono text-xs uppercase tracking-[0.2em] text-dim">{after >= before ? "The environment improved" : "The environment took the strain"}{score?.multiplier > 1 ? ` · ×${score.multiplier} streak` : ""}</p>
+      <div className="mt-4 flex flex-wrap gap-2 font-mono text-xs">
+        <span className="rounded-full border border-line px-3 py-1 text-mist">Health {before} → {after}</span>
+        {score?.good > 0 && <span className="rounded-full border border-bio/40 px-3 py-1 text-bio">Combo ×{score.good}</span>}
+        {score?.bad > 0 && <span className="rounded-full border border-ember/40 px-3 py-1 text-ember">Backlash ×{score.bad}</span>}
+        {score?.strain > 0 && <span className="rounded-full border border-ember/40 px-3 py-1 text-ember">Strain ×{score.strain}</span>}
       </div>
-      <p className="mt-3 text-mist">Weakest system now: <span className="text-bone">{METRICS[weak.key].label}</span> ({weak.value}/100 wellness). The body is only as strong as its most stressed organ — {isLast ? "that’s where it would break first." : "protect it next."}</p>
-      <button type="button" onClick={onNext} disabled={!done} className={`mt-6 rounded-full px-6 py-3 font-semibold text-ink transition disabled:opacity-30 ${nextIsFinal ? "bg-ember" : "bg-bio"}`}>
+      <p className="mt-4 text-mist">Weakest system now: <span className="text-bone">{METRICS[weak.key].label}</span> ({weak.value}/100). {isLast ? "That is where the body would break first." : "Protect it on the next move."}</p>
+      <button type="button" onClick={onNext} className={`mt-6 rounded-full px-6 py-3 font-semibold text-ink ${nextIsFinal ? "bg-ember" : "bg-bio"}`}>
         {isLast ? "See what the body became" : nextIsFinal ? "Advance to 2040 →" : "Next challenge →"}
       </button>
     </div>
   );
 }
 
-function Ending({ metrics, history, log, mode, onRestart }) {
+function Ending({ metrics, history, log, mode, points, onRestart }) {
   const health = systemHealth(metrics);
   const stage = stageFor(health);
   const verdict = health >= 58
@@ -355,12 +422,14 @@ function Ending({ metrics, history, log, mode, onRestart }) {
     <main className="mx-auto max-w-7xl px-5 py-10">
       <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,360px)_1fr]">
         <div className="mx-auto w-full max-w-[340px]">
-          <Body organs={organHealth(metrics)} health={health} labels className="h-auto w-full" />
+          <Body organs={organHealth(metrics)} health={health} className="h-auto w-full" />
         </div>
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-sand">2040 · Final state</p>
-          <h1 className="rise mt-3 font-display text-5xl font-light leading-tight md:text-6xl">{verdict.title}</h1>
-          <p className={`mt-4 font-display text-3xl ${toneClass(stage.tone)}`}>{toneMark(stage.tone)} {stage.name} · {health}</p>
+          <p className="nabd-score mt-3 text-bone">{points} XP</p>
+          <p className="mt-1 font-mono text-xs uppercase tracking-[0.2em] text-sand">Level {progressFor(points).level} · {progressFor(points).name}</p>
+          <h1 className="rise mt-4 font-display text-5xl font-light leading-tight md:text-6xl">{verdict.title}</h1>
+          <p className={`mt-4 font-display text-3xl ${toneClass(stage.tone)}`}>{toneMark(stage.tone)} {stage.name} · health {health}</p>
           <p className="mt-3 max-w-xl text-lg text-mist">{verdict.text}</p>
           <div className="mt-8 rounded-2xl border border-line bg-ink-2/70 p-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">System health over time</p>
@@ -422,7 +491,10 @@ export default function Experience() {
   const [alert, setAlert] = useState(false);
   const [hoverId, setHoverId] = useState(null);
   const [focusOrgan, setFocusOrgan] = useState(null);
-  const [held, setHeld] = useState(null);
+  const [points, setPoints] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [lastScore, setLastScore] = useState(null);
+  const [showAll, setShowAll] = useState(false);
 
   const scenarios = mode === "solo" ? [...JOURNEY, FAILURE] : [FAILURE];
   const scenario = scenarios[round];
@@ -431,16 +503,7 @@ export default function Experience() {
   const judges = names.map((name, index) => name.trim() || `Judge ${index + 1}`);
 
   useEffect(() => {
-    setRevealed(0);
-    setHeld(null);
-    if (!cascade.length) return undefined;
-    let tick = 0;
-    const timer = setInterval(() => {
-      tick += 1;
-      setRevealed(tick);
-      if (tick >= cascade.length) clearInterval(timer);
-    }, 750);
-    return () => clearInterval(timer);
+    setRevealed(cascade.length);
   }, [cascade]);
 
   const currentStep = revealed > 0 && revealed <= cascade.length ? cascade[revealed - 1] : null;
@@ -450,6 +513,9 @@ export default function Experience() {
   function begin(nextMode) {
     const baseline = nextMode === "solo" ? BASE : PRECRISIS;
     setMode(nextMode);
+    setPoints(0);
+    setStreak(0);
+    setLastScore(null);
     setInstalled([]);
     setLog([]);
     setHistory([{ label: nextMode === "solo" ? "Today" : "2039", health: systemHealth(baseline) }]);
@@ -471,6 +537,7 @@ export default function Experience() {
     setAgreed([false, false, false]);
     setCascade(steps);
     setFocusOrgan(null);
+    setShowAll(false);
     setHistory((points) => [...points, { label: `${next.year} shock`, health: systemHealth(shocked) }]);
     setScreen("deciding");
     setAlert(next.id === FAILURE.id);
@@ -481,6 +548,10 @@ export default function Experience() {
     const result = forecast(metrics, chosen, installed, scenario.intensity ?? 1, crisis);
     const next = result.metrics;
     const steps = result.cascade;
+    const scored = ratePlay(metrics, result, streak);
+    setLastScore(scored);
+    setPoints((current) => Math.max(0, current + scored.gained));
+    setStreak(scored.after > scored.before ? streak + 1 : 0);
     setPrevious(metrics);
     setMetrics(next);
     setCascade(steps);
@@ -493,6 +564,12 @@ export default function Experience() {
   function advance() {
     if (round < scenarios.length - 1) openRound(scenarios, round + 1, metrics);
     else {
+      const closing = systemHealth(metrics);
+      const bonus = closing >= 68 ? 80 : closing >= 50 ? 30 : 0;
+      if (bonus) {
+        setPoints((current) => current + bonus);
+        setLastScore({ gained: bonus, finale: true, before: closing, after: closing, good: 0, bad: 0, strain: 0, multiplier: 1 });
+      }
       setCascade([]);
       setScreen("end");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -516,16 +593,13 @@ export default function Experience() {
   const ghost = outlook
     ? Object.fromEntries(Object.keys(METRICS).map((key) => [key, outlook.metrics[key] - metrics[key]]))
     : null;
-  const forecastOrgans = outlook ? [...new Set(outlook.cascade.map((step) => step.organ))] : [];
-  const shockPlaying = revealed < cascade.length && screen === "deciding";
-  const previewing = screen === "deciding" && !shockPlaying && outlook;
+  const previewing = screen === "deciding" && outlook;
   const shownMetrics = previewing ? outlook.metrics : metrics;
   const shownHealth = systemHealth(shownMetrics);
-  const stepFocus = held != null && cascade[held] ? [cascade[held].organ] : null;
-  const liveFocus = screen !== "deciding" || shockPlaying
-    ? highlight
-    : (hovered ? [hovered.organ, ...forecastOrgans] : forecastOrgans);
-  const focus = [...new Set([...(stepFocus ?? liveFocus), ...(focusOrgan ? [focusOrgan] : [])])];
+  const liveFocus = screen === "deciding"
+    ? (hovered ? [hovered.organ] : [])
+    : highlight;
+  const focus = [...new Set([...liveFocus, ...(focusOrgan ? [focusOrgan] : [])])];
   const strains = (outlook?.cascade ?? []).filter((step) => step.phase === "adapt" && step.tone === "bad" && !step.text.startsWith("Chain reaction"));
   const needsAgreement = crisis && mode === "panel";
   const canSend = chosen.length > 0 && (scenario.slots == null || chosen.length === scenario.slots) && (!needsAgreement || agreed.every(Boolean));
@@ -537,68 +611,88 @@ export default function Experience() {
     const already = installed.includes(item.pair[0]) && installed.includes(item.pair[1]);
     return present && other && touched && !already;
   });
+  const handIds = focusOrgan
+    ? STRATEGIES.filter((item) => item.organ === focusOrgan || item.circulate).map((item) => item.id)
+    : (HAND[scenario.id] ?? STRATEGIES.map((item) => item.id));
+  const visibleIds = [...new Set([...(showAll ? STRATEGIES.map((item) => item.id) : handIds), ...chosen])];
+  const worthOf = (id) => {
+    const card = findStrategy(id);
+    if (chosen.includes(id) || spent + card.cost > scenario.budget || (scenario.slots != null && chosen.length >= scenario.slots)) return null;
+    const score = (ids) => ratePlay(metrics, forecast(metrics, ids, installed, scenario.intensity ?? 1, crisis), streak).gained;
+    const base = chosen.length ? score(chosen) : 0;
+    return score([...chosen, id]) - base;
+  };
+  const xpPreview = outlook ? ratePlay(metrics, outlook, streak).gained : 0;
+  const rank = progressFor(points);
 
   return (
     <div className="grain min-h-screen">
       <Header variant="experience" />
       {alert && <Alert onClose={() => setAlert(false)} />}
       {screen === "end" ? (
-        <Ending metrics={metrics} history={history} log={log} mode={mode} onRestart={begin} />
+        <Ending metrics={metrics} history={history} log={log} mode={mode} points={points} onRestart={begin} />
       ) : (
-        <main className="mx-auto grid max-w-7xl gap-8 px-5 py-8 lg:grid-cols-[minmax(0,360px)_1fr]">
-          <aside className="lg:sticky lg:top-20 lg:self-start">
-            <HealthBadge health={health} forecast={previewing ? shownHealth : null} />
-            {installed.length > 0 && (
-              <div className="mt-3 rounded-2xl border border-line bg-ink-2/70 px-4 py-3">
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">Already in place</p>
-                <ul className="mt-2 space-y-1">
-                  {installed.map((id) => (
-                    <li key={id}>
-                      <button type="button" onClick={() => setFocusOrgan(findStrategy(id).organ)} className="text-left text-sm text-mist hover:text-bone">{findStrategy(id).name}</button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <div className="mx-auto mt-2 max-w-[320px]">
+        <main className="nabd-play-page">
+          <div className="nabd-play">
+          <aside className="nabd-play-side">
+            <div className="nabd-play-body">
               <Body
                 organs={organHealth(shownMetrics)}
                 health={shownHealth}
                 highlight={focus}
                 selected={focusOrgan}
-                onSelect={screen === "deciding" && !shockPlaying ? ((organ) => setFocusOrgan((current) => (current === organ ? null : organ))) : undefined}
-                labels
+                onSelect={screen === "deciding" ? ((organ) => setFocusOrgan((current) => (current === organ ? null : organ))) : undefined}
                 status={previewing ? "Showing the forecast if these decisions are sent." : ""}
-                className="h-auto w-full"
               />
-              {screen === "deciding" && !shockPlaying && (
-                <p className="mt-1 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-dim">Select an organ to focus strategies</p>
-              )}
             </div>
-            <MetricList metrics={metrics} previous={previous} ghost={screen === "deciding" ? ghost : null} focus={focusOrgan} onFocus={screen === "deciding" ? ((organ) => setFocusOrgan((current) => (current === organ ? null : organ))) : undefined} />
+            {screen === "deciding" && (
+              <p className="nabd-play-hint">{focusOrgan ? `${focusOrgan} moves are in the hand.` : "Press an organ to filter the hand."}</p>
+            )}
+            <details className="nabd-fold">
+              <summary>Readings</summary>
+              <MetricList metrics={metrics} previous={previous} ghost={screen === "deciding" ? ghost : null} focus={focusOrgan} onFocus={screen === "deciding" ? ((organ) => setFocusOrgan((current) => (current === organ ? null : organ))) : undefined} />
+            </details>
           </aside>
-          <section>
-            <Timeline scenarios={scenarios} round={round} />
-            <div className={`mt-6 rounded-3xl border p-6 md:p-8 ${crisis ? "border-ember/60 bg-ember/5" : "border-line bg-ink-2/70"}`}>
-              <p className={`font-mono text-xs uppercase tracking-[0.25em] ${crisis ? "text-ember" : "text-sand"}`}>{scenario.year} · {crisis ? "Final challenge" : `Challenge ${round + 1}`}</p>
-              <h1 className="mt-2 font-display text-4xl md:text-5xl">{crisis ? `${scenario.year}: System failure` : scenario.title}</h1>
-              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-mist">{scenario.brief}</p>
-              <div className="mt-5 flex flex-wrap gap-2 font-mono text-xs">
-                {Object.entries(scenario.shock).map(([key, value]) => (
-                  <span key={key} className="rounded-md bg-ink-3 px-2.5 py-1 text-mist">{METRICS[key].label} <span className="text-ember">{value > 0 ? "↑" : "↓"}</span></span>
-                ))}
-              </div>
+          <section className="nabd-play-round">
+            <div className="nabd-hud">
+              <div><span>Environment</span><strong className={toneClass(stageFor(shownHealth).tone)}>{shownHealth}</strong></div>
+              <div><span>XP</span><strong>{points}<em className={screen === "deciding" && xpPreview > 0 ? "is-up" : screen === "deciding" && xpPreview < 0 ? "is-down" : ""}>{screen === "deciding" && xpPreview > 0 ? `+${xpPreview}` : screen === "deciding" && xpPreview < 0 ? xpPreview : ""}</em></strong></div>
+              <div><span>Level</span><strong>{rank.level}</strong></div>
+              <div><span>Year</span><strong>{scenario.year}</strong></div>
             </div>
-            <Cascade steps={cascade} revealed={revealed} held={held} onHold={setHeld} onReplay={() => setCascade((steps) => [...steps])} />
+            <div className="nabd-xp" aria-label={`${rank.name}, level ${rank.level}`}>
+              <span>{rank.name}</span>
+              <i><b style={{ width: `${rank.fill}%` }} /></i>
+            </div>
+            <Environment
+              metrics={screen === "response" ? previous : metrics}
+              preview={previewing ? outlook.metrics : screen === "response" ? metrics : null}
+            />
+            <Timeline scenarios={scenarios} round={round} />
+            <header className="nabd-round">
+              <p className={crisis ? "is-crisis" : ""}>{scenario.year} · {crisis ? "Final challenge" : `Challenge ${round + 1}`}</p>
+              <h1>{crisis ? `${scenario.year}: System failure` : scenario.title}</h1>
+              <p className="nabd-brief">{scenario.brief}</p>
+              {screen === "deciding" && cascade.filter((step) => step.phase === "shock").map((step) => (
+                <p key={step.text} className={`nabd-signal${step.tone === "bad" ? " is-bad" : ""}`}>{step.text}</p>
+              ))}
+            </header>
             {screen === "deciding" && (
               <>
-                <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
-                  <div>
-                    <h2 className="font-display text-2xl">{crisis ? "Choose three decisions" : "Choose your strategies"}</h2>
-                    <p className="text-sm text-dim">{crisis ? "Crisis decisions are national-scale: every effect is amplified ×1.5." : "Every card helps somewhere and costs something elsewhere. Look for combinations."}</p>
+                <div className="nabd-hand-head">
+                  <h2>{crisis ? "Choose three decisions" : "Choose a move"}</h2>
+                  <div className="nabd-hand-actions">
+                    <Budget total={scenario.budget} spent={spent} />
+                    <button type="button" disabled={!canSend} onClick={send} className={`nabd-apply rounded-full px-5 py-2.5 font-semibold text-ink ${crisis ? "bg-ember" : "bg-bio"}`}>
+                      {chosen.length === 0 ? "Choose a decision" : `Apply · ${xpPreview > 0 ? "+" : ""}${xpPreview} XP`}
+                    </button>
                   </div>
-                  <Budget total={scenario.budget} spent={spent} />
                 </div>
+                <p className={`nabd-forecast${strains[0] ? " is-bad" : ""}`}>
+                  {outlook
+                    ? `Environment ${health} → ${systemHealth(outlook.metrics)}${links[0] ? ` · ${links[0].good ? "Combo" : "Backlash"}: ${links[0].title}` : ""}${strains[0] ? ` · ${strains[0].text}` : ""}`
+                    : "Select a decision to see how the environment responds."}
+                </p>
                 {focusOrgan && (
                   <button type="button" onClick={() => setFocusOrgan(null)} className="mt-3 rounded-full border border-bio/50 bg-bio/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-bio">
                     Focused on {focusOrgan} · show every strategy
@@ -617,53 +711,31 @@ export default function Experience() {
                     })}
                   </div>
                 )}
-                <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {STRATEGIES.map((strategy) => {
-                    const selected = chosen.includes(strategy.id);
+                <div className="nabd-moves mt-6">
+                  {visibleIds.map((id) => {
+                    const strategy = findStrategy(id);
+                    const selected = chosen.includes(id);
                     const blocked = !selected && (spent + strategy.cost > scenario.budget || slotsFull);
-                    const related = !focusOrgan || strategy.circulate || strategy.organ === focusOrgan || Object.keys(strategy.effects).some((key) => METRICS[key].organ === focusOrgan);
                     return (
-                      <Card
-                        key={strategy.id}
+                      <Move
+                        key={id}
                         strategy={strategy}
                         on={selected}
                         disabled={blocked}
-                        quiet={Boolean(focusOrgan) && !related && !selected}
-                        intensity={scenario.intensity ?? 1}
-                        installed={installed.includes(strategy.id)}
-                        onClick={() => toggle(strategy.id)}
+                        worth={worthOf(id)}
+                        onClick={() => toggle(id)}
                         onHover={setHoverId}
                       />
                     );
                   })}
                 </div>
-                <div className="sticky bottom-4 z-30 mt-8 rounded-2xl border border-line bg-ink-2/95 p-4 shadow-2xl backdrop-blur">
-                  {outlook && (
-                    <p className="mb-3 text-sm text-mist">
-                      <span className="text-dim">Forecast · </span>
-                      <span className="text-bone">{hoverAdds ? hovered.name : "Selected decisions"}</span>
-                      {` · health ${health} → ${systemHealth(outlook.metrics)} · ${formatEffects(ghost) || "no further change"}`}
-                    </p>
-                  )}
-                  {strains.length > 0 && (
-                    <ul className="mb-3 space-y-1">
-                      {strains.slice(0, 2).map((step) => (
-                        <li key={step.text} className="text-sm text-ember">{step.text}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {links.length > 0 && (
-                    <ul className="mb-3 space-y-2">
-                      {links.map((item) => (
-                        <li key={item.title} className={`rounded-xl border px-3 py-2 text-sm ${item.good ? "border-bio/50 bg-bio/10 text-bio" : "border-ember/50 bg-ember/10 text-ember"}`}>
-                          {item.good ? "Connected solution" : "Chain reaction"}: {item.title}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="flex flex-wrap items-center justify-between gap-4">
+                <button type="button" onClick={() => setShowAll((value) => !value)} className="mt-4 font-mono text-[11px] uppercase tracking-[0.16em] text-dim hover:text-bone">
+                  {showAll ? "Show this round’s hand" : "Show every move"}
+                </button>
+                <div className="nabd-send">
+                  <div className="nabd-send-row">
                     <div className="min-w-0 text-sm text-mist">
-                      {chosen.length === 0 ? <span className="text-dim">No strategies selected yet.</span> : <span><span className="text-dim">Selected: </span>{chosen.map((id) => findStrategy(id).name).join(" + ")}</span>}
+                      {chosen.length === 0 ? <span className="text-dim">Nothing selected yet.</span> : <span><span className="text-dim">Selected: </span>{chosen.map((id) => findStrategy(id).name).join(" + ")}</span>}
                     </div>
                     {needsAgreement && (
                       <div className="flex flex-wrap items-center gap-2">
@@ -675,17 +747,15 @@ export default function Experience() {
                         ))}
                       </div>
                     )}
-                    <button type="button" disabled={!canSend} onClick={send} className={`rounded-full px-6 py-3 font-semibold text-ink transition disabled:cursor-not-allowed disabled:opacity-30 ${crisis ? "bg-ember" : "bg-bio"}`}>
-                      {crisis ? "Stabilise the system" : "Send decisions through the body"}
-                    </button>
                   </div>
                 </div>
               </>
             )}
             {screen === "response" && (
-              <Response metrics={metrics} previous={previous} done={revealed >= cascade.length} isLast={round === scenarios.length - 1} nextIsFinal={scenarios[round + 1]?.id === FAILURE.id} onNext={advance} />
+              <Response metrics={metrics} previous={previous} score={lastScore} done={revealed >= cascade.length} isLast={round === scenarios.length - 1} nextIsFinal={scenarios[round + 1]?.id === FAILURE.id} onNext={advance} />
             )}
           </section>
+          </div>
         </main>
       )}
     </div>

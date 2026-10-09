@@ -1,0 +1,600 @@
+html:has(.nil),
+body:has(.nil) {
+  overflow: hidden;
+  background: #07080b;
+}
+
+.nil {
+  --bone: #efe8dc;
+  --mist: #c9c2b6;
+  --dim: #8d877c;
+  --amber: #c6a56a;
+  --line: rgba(239, 232, 220, 0.14);
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #07080b;
+  color: var(--bone);
+  font-family: "Instrument Sans", "Segoe UI", sans-serif;
+}
+
+.nil button,
+.nil a {
+  font: inherit;
+  color: inherit;
+}
+
+.nil-room {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px 420px at 50% 108%, rgba(198, 165, 106, 0.09), transparent 58%),
+    radial-gradient(700px 380px at 50% 0%, rgba(120, 150, 160, 0.07), transparent 60%),
+    linear-gradient(180deg, #101218 0%, #07080b 42%, #05060a 100%);
+}
+
+.nil-horizon {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 26vh;
+  background:
+    linear-gradient(180deg, transparent, rgba(5, 6, 8, 0.2) 30%, rgba(5, 6, 8, 0.72)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 280'%3E%3Cpath fill='%23141a22' d='M0 220 L80 180 L150 200 L240 120 L310 170 L390 90 L470 150 L560 70 L640 140 L730 100 L820 160 L900 80 L990 150 L1080 60 L1160 130 L1260 90 L1340 150 L1440 110 L1440 280 L0 280 Z'/%3E%3C/svg%3E") center bottom / cover no-repeat;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nil.is-hall .nil-horizon {
+  opacity: 0.4;
+}
+
+.nil-kicker {
+  margin: 0;
+  color: var(--amber);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.nil h1,
+.nil h2,
+.nil-mark b,
+.nil-oman b,
+.nil-proto b {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 400;
+}
+
+.nil-bar {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.85rem 1.4rem;
+  background: linear-gradient(#07080bf2, #07080b00);
+}
+
+.nil-mark {
+  display: grid;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nil-mark span {
+  color: var(--dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.nil-mark b {
+  font-size: 1.15rem;
+  letter-spacing: 0.01em;
+}
+
+.nil-bar nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.2rem 1rem;
+}
+
+.nil-bar nav button {
+  border: 0;
+  background: transparent;
+  padding: 0.2rem 0;
+  color: var(--dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nil-bar nav button[aria-current="true"],
+.nil-bar nav button:hover,
+.nil-mark:hover b {
+  color: var(--bone);
+}
+
+.nil-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.nil-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.nil-index {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nil-float {
+  position: absolute;
+  z-index: 3;
+  top: 5.5rem;
+  left: 1.4rem;
+}
+
+.nil-index button {
+  display: flex;
+  gap: 0.7rem;
+  align-items: baseline;
+  border: 0;
+  background: transparent;
+  padding: 0.18rem 0;
+  color: var(--dim);
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.35rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nil-index button span {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
+.nil-index button[aria-pressed="true"],
+.nil-index button:hover {
+  color: var(--bone);
+}
+
+.nil-float.is-quiet {
+  opacity: 0.45;
+}
+
+.nil-invite {
+  position: absolute;
+  z-index: 3;
+  bottom: 7vh;
+  left: 1.4rem;
+  width: min(18rem, 28vw);
+  margin: 0;
+  color: var(--mist);
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.nil-board {
+  position: absolute;
+  z-index: 4;
+  top: 4.6rem;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  width: min(640px, 46vw);
+  overflow: auto;
+  padding: 1.8rem 1.7rem 2.2rem;
+  border: 1px solid var(--line);
+  background: rgba(8, 10, 14, 0.82);
+  backdrop-filter: blur(18px);
+}
+
+.nil-board-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.nil-back {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--dim);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nil-back:hover {
+  color: var(--bone);
+}
+
+.nil-compare em {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--dim);
+  font-style: normal;
+  font-size: 0.85rem;
+}
+
+.nil-board h2,
+.nil-dossier h2,
+.nil-oman h2,
+.nil-proto h2,
+.nil-build h2 {
+  margin: 0.35rem 0 0;
+  font-size: clamp(2.4rem, 4vw, 4rem);
+  line-height: 1.02;
+}
+
+.nil-modes {
+  display: flex;
+  gap: 1.1rem;
+  margin-top: 1.2rem;
+}
+
+.nil-modes button,
+.nil-sim-head button,
+.nil-scenarios button,
+.nil-toggles button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.nil-modes button {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.nil-modes button.is-on,
+.nil-sim-head button.is-on,
+.nil-scenarios button[aria-pressed="true"],
+.nil-toggles button[aria-pressed="true"] {
+  color: var(--bone);
+}
+
+.nil-copy {
+  margin-top: 1.4rem;
+}
+
+.nil-lead {
+  margin: 0.4rem 0 0.8rem;
+  color: var(--bone);
+  font-family: Fraunces, Georgia, serif;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.nil-copy p,
+.nil-dossier p,
+.nil-oman p,
+.nil-proto em,
+.nil-build p {
+  color: var(--mist);
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+
+.nil-quiet {
+  color: var(--dim) !important;
+  font-size: 0.92rem !important;
+}
+
+.nil-path {
+  margin: 1.2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nil-path li {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.8rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.nil-path span,
+.nil-compare span,
+.nil-readings span,
+.nil-toggles span {
+  color: var(--amber);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.nil-path b,
+.nil-compare b {
+  font-weight: 400;
+  font-size: 1.05rem;
+}
+
+.nil-compare,
+.nil-readings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.nil-compare div,
+.nil-readings p {
+  margin: 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.nil-compare b,
+.nil-readings b {
+  display: block;
+  margin-top: 0.2rem;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+
+.nil-sim {
+  margin-top: 1.2rem;
+}
+
+.nil-sim-head,
+.nil-toggles button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.nil-sim .drawing {
+  max-height: 240px;
+  margin-top: 0.6rem;
+}
+
+.nil-sliders {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.nil-sliders .instrument {
+  color: var(--mist);
+}
+
+.nil-enter {
+  margin-top: 1.4rem;
+  border: 1px solid var(--bone);
+  background: transparent;
+  padding: 0.75rem 1.2rem;
+  color: var(--bone);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nil-enter:hover {
+  background: var(--bone);
+  color: #12141a;
+}
+
+.nil-wing {
+  position: absolute;
+  z-index: 3;
+  inset: 4.4rem 0 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 3rem;
+  overflow: auto;
+  padding: 1.5rem 4vw 4rem;
+}
+
+.nil-dossier section,
+.nil-proto li,
+.nil-oman li {
+  margin-top: 1.3rem;
+}
+
+.nil-oman,
+.nil-proto,
+.nil-build {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.nil-oman ol,
+.nil-proto ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nil-oman button,
+.nil-proto button {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  padding: 0.9rem 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nil-oman span,
+.nil-proto span {
+  color: var(--amber);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.nil-oman b,
+.nil-proto b {
+  font-size: 1.7rem;
+}
+
+.nil-oman em,
+.nil-proto em {
+  color: var(--mist);
+  font-style: normal;
+}
+
+.nil-scenarios,
+.nil-toggles {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
+.nil-scenarios button,
+.nil-toggles button {
+  border-top: 1px solid var(--line);
+  padding: 0.65rem 0;
+  text-align: left;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.35rem;
+}
+
+.nil-state {
+  margin: 1rem 0 0.3rem;
+  font-family: Fraunces, Georgia, serif;
+  font-size: clamp(3rem, 6vw, 5.2rem);
+  line-height: 0.95;
+}
+
+.nil-chain {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nil-chain li {
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--line);
+  color: var(--mist);
+  line-height: 1.4;
+}
+
+.nil-arrive {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 380px) minmax(0, 1fr);
+  align-items: center;
+  gap: 4vw;
+  padding: 8vh 8vw;
+  background: #05060a;
+  transition: opacity 1.1s ease;
+}
+
+.nil-arrive.is-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nil-silhouette {
+  width: min(100%, 340px);
+  justify-self: center;
+  opacity: 0;
+  filter: saturate(0.85);
+  animation: nil-rise 2.8s ease forwards, nil-breath 5.6s ease-in-out 2.8s infinite;
+}
+
+.nil-arrive-copy {
+  opacity: 0;
+  animation: nil-rise 1.5s ease 1.7s forwards;
+}
+
+.nil-arrive h1 {
+  margin: 0.4rem 0 0;
+  font-size: clamp(3.4rem, 7vw, 6.4rem);
+  line-height: 0.92;
+}
+
+.nil-arrive-copy p:last-of-type {
+  max-width: 28rem;
+  margin: 1rem 0 0;
+  color: var(--mist);
+  font-size: 1.2rem;
+}
+
+@keyframes nil-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes nil-breath {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.012); }
+}
+
+@media (max-width: 980px) {
+  .nil-arrive,
+  .nil-wing,
+  .nil-oman,
+  .nil-proto,
+  .nil-build {
+    grid-template-columns: 1fr;
+  }
+
+  .nil-board {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    height: 62%;
+  }
+
+  .nil-invite {
+    left: 1.2rem;
+    right: 1.2rem;
+  }
+
+  .nil-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nil-silhouette,
+  .nil-arrive-copy,
+  .nil-arrive {
+    animation: none;
+    opacity: 1;
+    transition: none;
+  }
+}

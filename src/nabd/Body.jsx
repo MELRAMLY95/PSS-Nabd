@@ -1,21 +1,25 @@
 import { colorFor } from "./engine.js";
 
 const SPOTS = {
-  brain: { top: "3.5%", left: "37%", width: "26%", height: "11%" },
-  lungs: { top: "19%", left: "27%", width: "46%", height: "16%" },
-  heart: { top: "24%", left: "40%", width: "20%", height: "11%" },
-  liver: { top: "34%", left: "24%", width: "24%", height: "12%" },
-  kidneys: { top: "40%", left: "28%", width: "44%", height: "10%" },
-  skin: { top: "2%", left: "12%", width: "76%", height: "96%" },
+  brain: { top: "3%", left: "36%", width: "28%", height: "16%" },
+  lungs: { top: "18%", left: "30%", width: "32%", height: "16%" },
+  heart: { top: "24%", left: "40%", width: "18%", height: "12%" },
+  liver: { top: "33%", left: "28%", width: "22%", height: "12%" },
+  kidneys: { top: "40%", left: "34%", width: "28%", height: "10%" },
+  blood: { top: "62%", left: "36%", width: "18%", height: "14%" },
+  skeleton: { top: "50%", left: "42%", width: "14%", height: "22%" },
+  skin: { top: "18%", left: "16%", width: "16%", height: "28%" },
 };
 
 const LABELS = {
   brain: { x: "72%", y: "8%", text: "Brain · decides" },
   lungs: { x: "4%", y: "28%", text: "Lungs · exchange" },
-  heart: { x: "68%", y: "32%", text: "Heart · circulates" },
+  heart: { x: "68%", y: "32%", text: "Heart · energy" },
   liver: { x: "2%", y: "42%", text: "Liver · transforms" },
   kidneys: { x: "64%", y: "48%", text: "Kidneys · recover" },
-  skin: { x: "66%", y: "72%", text: "Skin · adapts" },
+  blood: { x: "66%", y: "60%", text: "Blood · circulates" },
+  skeleton: { x: "2%", y: "64%", text: "Skeleton · supports" },
+  skin: { x: "66%", y: "78%", text: "Skin · adapts" },
 };
 
 export function Body({
@@ -85,6 +89,7 @@ export function Body({
       <img className="nabd-vessels" src={`${import.meta.env.BASE_URL}img/anatomy-vessels.png`} alt="" draggable="false" />
       <div className="nabd-live-wash" style={{ opacity: wash, background: colorFor(health) }} />
       {Object.entries(SPOTS).map(([organ, box]) => {
+        if (typeof organs[organ] !== "number") return null;
         const active = highlight.includes(organ) || selected === organ;
         return (
           <div
@@ -94,14 +99,14 @@ export function Body({
             style={{
               ...box,
               "--spot": colorFor(organs[organ]),
-              zIndex: organ === "skin" ? 1 : organ === "heart" ? 4 : 3,
+              zIndex: organ === "skin" ? 1 : organ === "heart" ? 4 : organ === "skeleton" ? 2 : 3,
               cursor: onSelect ? "pointer" : undefined,
             }}
             {...activate(organ)}
           />
         );
       })}
-      {labels && Object.entries(LABELS).map(([organ, label]) => (
+      {labels && Object.entries(LABELS).filter(([organ]) => typeof organs[organ] === "number").map(([organ, label]) => (
         <span
           key={organ}
           className="nabd-live-label"

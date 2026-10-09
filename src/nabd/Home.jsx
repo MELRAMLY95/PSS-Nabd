@@ -1,16 +1,141 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { EXHIBITS, ORGANS as LAB_ORGANS } from "../lab/content.js";
+import { INITIAL, simulate } from "../lab/engine.js";
+import { Workbench } from "../lab/Exhibit.jsx";
 import { Body } from "./Body.jsx";
 import { STAGES, colorFor, previewOrgans, stageFor, toneClass, toneMark } from "./engine.js";
 import { Header } from "./Header.jsx";
 import { sitePath } from "./site.js";
 
 const ORGANS = [
-  { id: "brain", name: "The Brain", role: "Intelligence & decision-making", principle: "The brain receives signals from every part of the body and coordinates a single response.", technology: "A central intelligence layer that reads water, energy, temperature and waste data and decides where resources are most urgently needed.", monitors: ["Water availability", "Energy demand", "Temperature", "Waste levels", "Consumption"], oman: "Data-led planning for a more innovative, knowledge-based economy." },
-  { id: "heart", name: "The Heart", role: "Resource circulation", principle: "The heart and blood vessels deliver resources according to the body’s needs.", technology: "A circulation network that keeps water, energy and recovered materials flowing to where they are needed instead of being supplied once and lost.", monitors: ["Flow rates", "Distribution balance", "Food & material supply"], oman: "Resources should flow through a system, not into a system and disappear." },
-  { id: "kidneys", name: "The Kidneys", role: "Selective water recovery", principle: "Kidneys don’t remove everything — they carefully decide what to keep and what to remove.", technology: "A selective recovery system that separates used water into reusable water, recoverable materials and concentrated waste.", monitors: ["Water quality", "Recovery rate", "Brine & residue"], oman: "Water security for one of the most water-stressed regions on Earth." },
-  { id: "lungs", name: "The Lungs", role: "Air & carbon management", principle: "A vast exchange surface folded into a compact space makes the lungs extremely efficient.", technology: "High-surface-area exchange systems — from mangroves to green corridors — that monitor air quality, CO₂ and emissions and respond to them.", monitors: ["Air quality", "Carbon dioxide", "Emissions"], oman: "Cleaner cities and progress toward Oman’s net-zero ambitions." },
-  { id: "skin", name: "The Skin", role: "Protection & temperature regulation", principle: "Skin protects the body and constantly helps keep its internal temperature stable.", technology: "An adaptive outer layer for buildings: more cooling and shading when it is hot, less when it is not — instead of running at maximum all the time.", monitors: ["Temperature", "Sunlight intensity", "Cooling load"], oman: "Designed for Oman’s extreme heat, where cooling drives energy demand." },
-  { id: "liver", name: "The Liver", role: "Waste transformation", principle: "The liver processes and detoxifies harmful substances so the body can use or remove them.", technology: "A waste stream that is separated into useful and unusable parts — compost, biogas and recovered materials — so waste becomes a resource.", monitors: ["Waste volume", "Separation quality", "Recovered material"], oman: "A circular economy that reduces landfill and creates new industries." },
+  {
+    id: "brain",
+    name: "The Brain",
+    system: "Decision intelligence",
+    role: "Intelligence & decision-making",
+    message: "Green skills control the future, just as the brain controls the body.",
+    insight: "Many signals, one revised decision.",
+    inspiration: "Sense, compare, decide, then change the decision.",
+    challenge: "Heat, water and energy planned as separate problems.",
+    path: "A thinking layer that retimes demand. It does not create the resource.",
+    impact: "People, policy and intelligent systems decide together. Technology alone is not the brain.",
+    principle: "The brain receives signals from every part of the body and coordinates a single response.",
+    technology: "A central intelligence layer that reads water, energy, temperature and waste data and decides where resources are most urgently needed.",
+    monitors: ["Water availability", "Energy demand", "Temperature", "Waste levels", "Consumption"],
+    oman: "Data-led planning for a more innovative, knowledge-based economy.",
+  },
+  {
+    id: "heart",
+    name: "The Heart",
+    system: "Clean energy",
+    role: "Resource circulation",
+    message: "The future needs energy that powers life without damaging the systems that sustain life.",
+    insight: "A continuous pump, with rhythm and storage in the flow.",
+    inspiration: "Generate cleanly, hold surplus, send it where the load is.",
+    challenge: "Every other invention stops if the energy that feeds it causes harm.",
+    path: "Clean energy that powers recovery, exchange, cooling and circulation.",
+    impact: "Survival is the minimum. This energy is meant to let a society strive, enjoy and develop, without putting a later generation at risk.",
+    principle: "The heart and blood vessels deliver resources according to the body’s needs.",
+    technology: "A circulation network that keeps water, energy and recovered materials flowing to where they are needed instead of being supplied once and lost.",
+    monitors: ["Flow rates", "Distribution balance", "Food & material supply"],
+    oman: "Resources should flow through a system, not into a system and disappear.",
+  },
+  {
+    id: "blood",
+    name: "Blood",
+    system: "Resource flow",
+    role: "Circulation of water, energy, food and materials",
+    message: "A healthy future depends on circulation, not isolated systems.",
+    insight: "Blood carries supply, signals and waste between every tissue.",
+    inspiration: "Connect the streams, then move them toward the place under stress.",
+    challenge: "A city can hold water in one sector and a shortage in another.",
+    path: "One circulation for resources that already exist. It does not create them.",
+    impact: "In the model a shortage can ease when the streams are allowed to meet. That is a simulation assumption, not a measured national flow.",
+    principle: "Blood carries oxygen, nutrients, signals and waste so one part of the body can supply another.",
+    technology: "A circulation layer for water, energy, food, materials and recoverable waste. The heart’s clean energy is what keeps that flow moving.",
+    monitors: ["Where demand is short", "What can be moved", "What must not be interrupted"],
+    oman: "Sectors that never meet cannot answer a shortage somewhere else in the country.",
+  },
+  {
+    id: "kidneys",
+    name: "The Kidneys",
+    system: "Water intelligence",
+    role: "Selective water recovery",
+    message: "Water security depends on systems that filter, regulate and reuse — just like kidneys.",
+    insight: "Filter, take back what is still useful, release a smaller remainder.",
+    inspiration: "Do not treat every used drop as waste.",
+    challenge: "Water used once is often lost in a region that cannot afford to lose it.",
+    path: "Selective recovery: useful water returns, a concentrate leaves, and the recovery spends energy.",
+    impact: "The model shows recovered water and the energy that recovery draws. Those readings are assumptions, not a measured saving.",
+    principle: "Kidneys don’t remove everything — they carefully decide what to keep and what to remove.",
+    technology: "A selective recovery system that separates used water into reusable water, recoverable materials and concentrated waste.",
+    monitors: ["Water quality", "Recovery rate", "Brine & residue"],
+    oman: "Water security for one of the most water-stressed regions on Earth.",
+  },
+  {
+    id: "lungs",
+    name: "The Lungs",
+    system: "Air exchange",
+    role: "Air & carbon management",
+    message: "Exchange must stay balanced, or the whole system suffers.",
+    insight: "A vast folded surface, with air moving across it.",
+    inspiration: "Exchange across a large surface, and change the exchange when the air changes.",
+    challenge: "Dust, humidity and fouled air in a hot city.",
+    path: "An exchange surface for air that has to be renewed. It is not a waste organ, and it does not claim to clean a city.",
+    impact: "Raised dust or still air weakens the exchange in the model. The lung-inspired surface resists that. It does not erase it.",
+    principle: "A vast exchange surface folded into a compact space makes the lungs extremely efficient.",
+    technology: "High-surface-area exchange systems — from mangroves to green corridors — that monitor air quality, CO₂ and emissions and respond to them.",
+    monitors: ["Air quality", "Carbon dioxide", "Emissions"],
+    oman: "Cleaner cities and progress toward Oman’s net-zero ambitions.",
+  },
+  {
+    id: "skin",
+    name: "The Skin",
+    system: "Climate envelope",
+    role: "Protection & temperature regulation",
+    message: "Protection and temperature control are essential for survival in extreme climates.",
+    insight: "An outer layer that changes how much heat it lets through.",
+    inspiration: "A responding skin, not a fixed shell.",
+    challenge: "Cooling is what makes extreme heat expensive.",
+    path: "An outer layer for houses that is less open to summer heat, so the building asks less of air conditioning.",
+    impact: "No share of energy saved is claimed. In the model, heat getting in and cooling demand fall when the layer responds. That fall is a simulation assumption.",
+    principle: "Skin protects the body and constantly helps keep its internal temperature stable.",
+    technology: "An adaptive outer layer for buildings: more cooling and shading when it is hot, less when it is not — instead of running at maximum all the time.",
+    monitors: ["Temperature", "Sunlight intensity", "Cooling load"],
+    oman: "Designed for Oman’s extreme heat, where cooling drives energy demand.",
+  },
+  {
+    id: "liver",
+    name: "The Liver",
+    system: "Circular waste",
+    role: "Waste transformation",
+    message: "In a healthy system, waste is managed before it becomes poison.",
+    insight: "Sort, transform, recover, and let only the true remainder leave.",
+    inspiration: "Detoxify by changing the material, not by hiding it.",
+    challenge: "Mixed waste accumulates, and hazardous material cannot be wished away.",
+    path: "Use, separate, transform, recover, reuse — a hope of zero waste, with hazardous material still named.",
+    impact: "Nothing here is a measured diversion rate. The model only shows a stream being split into recovery and remainder.",
+    principle: "The liver processes and detoxifies harmful substances so the body can use or remove them.",
+    technology: "A waste stream that is separated into useful and unusable parts — compost, biogas and recovered materials — so waste becomes a resource.",
+    monitors: ["Waste volume", "Separation quality", "Recovered material"],
+    oman: "A circular economy that reduces landfill and creates new industries.",
+  },
+  {
+    id: "skeleton",
+    name: "The Skeleton",
+    system: "Resilient infrastructure",
+    role: "Structure, support and long-term stability",
+    message: "No living system can function without strong, intelligent support.",
+    insight: "Bone shares a load. One point is not asked to hold the body.",
+    inspiration: "Distribute stress through a frame instead of thickening a single member.",
+    challenge: "Heat and structural demand arrive together on buildings, transport and infrastructure.",
+    path: "A frame that shares load. The same stress reads lower in the model when it is shared.",
+    impact: "This is a study of the logic, not a structural certificate. Raise the load or the heat and the stress climbs again.",
+    principle: "The skeleton gives the body structure, support and the ability to keep standing as stress changes.",
+    technology: "Infrastructure that shares load across a frame — buildings, transport and the structure the other systems depend on — instead of concentrating stress in one place.",
+    monitors: ["Structural load", "Heat on the structure", "Where stress concentrates"],
+    oman: "The framework that has to hold every other sustainable system up, in heat, over decades.",
+  },
 ];
 
 const VISION = [
@@ -30,7 +155,8 @@ const CHAIN = [
   { organ: ["heart", "brain"], tag: "Sense again", text: "But that creates a new energy demand — and the brain detects it." },
   { organ: ["heart", "lungs"], tag: "Adapt", text: "The energy system responds by prioritising renewable solar power, protecting the air." },
   { organ: ["skin"], tag: "Regulate", text: "Meanwhile the temperature climbs. The skin increases its cooling and shading response." },
-  { organ: ["brain", "heart", "lungs", "kidneys", "liver", "skin"], tag: "Balance", text: "One environmental problem has created a chain of decisions through the whole body." },
+  { organ: ["blood", "skeleton"], tag: "Support", text: "Blood keeps water, energy and recovered material in one circulation. The skeleton keeps the structure standing while that load moves." },
+  { organ: [], tag: "Balance", text: "One environmental problem has created a chain of decisions through the whole body." },
 ];
 
 const CYCLE = [
@@ -89,15 +215,23 @@ function CycleWords({ cycle, onChoose }) {
 
 export default function Home() {
   const [health, setHealth] = useState(72);
-  const [selected, setSelected] = useState("kidneys");
+  const [selected, setSelected] = useState(null);
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [cycle, setCycle] = useState(0);
   const [cycleLive, setCycleLive] = useState(true);
   const [picked, setPicked] = useState("Resilience");
   const stage = stageFor(health);
-  const organ = ORGANS.find((item) => item.id === selected);
-  const organReading = previewOrgans(74)[selected];
+  const organ = ORGANS.find((item) => item.id === selected) ?? null;
+  const exhibit = selected ? EXHIBITS[selected] : null;
+  const controls = LAB_ORGANS.find((item) => item.id === selected)?.controls ?? [];
+  const [local, setLocal] = useState(() => ({ ...INITIAL, systems: { ...INITIAL.systems, kidneys: true } }));
+  const played = useMemo(() => simulate(local), [local]);
+  const bare = useMemo(() => simulate({ ...local, systems: { ...INITIAL.systems } }), [local]);
+  useEffect(() => {
+    if (!selected) return;
+    setLocal({ ...INITIAL, systems: { ...INITIAL.systems, [selected]: true } });
+  }, [selected]);
   const pickedStage = STAGES.find((item) => item.name === picked) ?? STAGES[2];
 
   useEffect(() => {
@@ -120,72 +254,78 @@ export default function Home() {
   return (
     <div className="grain overflow-x-clip">
       <Header />
-      <section className="relative mx-auto grid max-w-7xl gap-10 px-5 pb-20 pt-12 lg:grid-cols-[1.25fr_1fr] lg:pt-20">
-        <div className="relative z-10 flex flex-col">
-          <p className="rise font-mono text-xs uppercase tracking-[0.3em] text-sand" style={{ animationDelay: "0.05s" }}>A biomimetic sustainability system · Oman Vision 2040</p>
-          <h1 className="rise mt-6 font-display text-[clamp(2.6rem,6.2vw,5.6rem)] font-light leading-[0.95] tracking-tight" style={{ animationDelay: "0.15s" }}>
-            What if Oman 2040 could <em className="nabd-shine font-normal text-bio">think</em>, <em className="nabd-shine font-normal text-sand">adapt</em> and <em className="nabd-shine font-normal text-bone">heal</em> like a human body?
-          </h1>
-          <p className="rise mt-8 max-w-xl text-lg leading-relaxed text-mist" style={{ animationDelay: "0.3s" }}>
-            Nabd — Arabic for <span className="text-bone">pulse</span> — is a self-regulating resource system for water, energy and waste. It borrows the mechanisms the human body uses to stay alive and turns them into infrastructure that senses, decides, circulates, recovers and adapts.
-          </p>
-          <div className="rise mt-10 flex flex-wrap items-center gap-4" style={{ animationDelay: "0.45s" }}>
-            <a href={sitePath("/experience")} className="rounded-full bg-bio px-6 py-3 font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_32px_rgba(75,227,180,0.55)]">Enter the system — become the brain</a>
-            <a href="#concept" className="rounded-full border border-line px-6 py-3 text-mist hover:border-bone hover:text-bone">How it works</a>
-          </div>
-          <div className="rise mt-8 max-w-xl" style={{ animationDelay: "0.55s" }}>
-            <CycleWords cycle={cycle} onChoose={chooseCycle} />
-          </div>
-        </div>
-        <div className="rise relative" style={{ animationDelay: "0.25s" }}>
-          <div
-            className="nabd-chamber nabd-stage relative mx-auto max-w-[380px]"
-            onMouseMove={(event) => {
-              if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-              const tilt = event.currentTarget.querySelector(".nabd-tilt");
-              if (!tilt) return;
-              const box = event.currentTarget.getBoundingClientRect();
-              const x = (event.clientX - box.left) / box.width - 0.5;
-              const y = (event.clientY - box.top) / box.height - 0.5;
-              tilt.style.transform = `rotateX(${(-y * 8).toFixed(2)}deg) rotateY(${(x * 10).toFixed(2)}deg)`;
-            }}
-            onMouseLeave={(event) => {
-              const tilt = event.currentTarget.querySelector(".nabd-tilt");
-              if (tilt) tilt.style.transform = "rotateX(0deg) rotateY(0deg)";
-            }}
-          >
-            <div className="nabd-tilt">
-              <Body organs={previewOrgans(health)} health={health} highlight={CYCLE[cycle].organs} labels className="h-auto w-full" />
-              <p className="mt-2 text-center font-mono text-[11px] uppercase tracking-[0.18em] text-sand">{CYCLE[cycle].word} · the highlighted organs</p>
+      <section id="organs" className="nabd-install">
+        <div className="nabd-install-body">
+          <Body organs={previewOrgans(health)} health={health} selected={selected} onSelect={setSelected} className="h-auto w-full" />
+          <div className="mx-auto mt-3 max-w-sm">
+            <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
+              <span>Body</span>
+              <span className={toneClass(stage.tone)}>{stage.name} · {health}</span>
             </div>
-          </div>
-          <div className="mx-auto mt-2 max-w-sm rounded-2xl border border-line bg-ink-2/80 p-4 backdrop-blur">
-            <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em]">
-              <span className="text-dim">System health</span>
-              <span className={toneClass(stage.tone)}>{toneMark(stage.tone)} {stage.name} · {health}</span>
-            </div>
-            <div className="nabd-meter" aria-hidden="true"><i style={{ width: `${health}%`, background: colorFor(health) }} /></div>
             <input
               type="range"
               min="5"
               max="95"
               value={health}
               onChange={(event) => setHealth(Number(event.target.value))}
-              className="nabd-range mt-3 w-full"
+              className="nabd-range mt-2 w-full"
               style={{ background: `linear-gradient(90deg, ${colorFor(health)} ${((health - 5) / 90) * 100}%, var(--color-ink-3) ${((health - 5) / 90) * 100}%)` }}
               aria-label="Preview system health"
             />
-            <p className="mt-2 text-xs text-dim">Drag to see the body stressed or thriving.</p>
-            <p className="mt-1 text-xs text-mist">{stage.description}</p>
-            <div className="nabd-organs font-mono text-[10px] uppercase tracking-[0.12em] text-dim">
-              {Object.entries(previewOrgans(health)).map(([organ, value]) => (
-                <div key={organ}>
-                  {organ.charAt(0).toUpperCase() + organ.slice(1)}
-                  <span><i style={{ width: `${value}%`, background: colorFor(value) }} /></span>
-                </div>
-              ))}
-            </div>
           </div>
+        </div>
+        <div className="nabd-organ-list" role="list">
+          {ORGANS.map((item) => (
+            <button key={item.id} type="button" role="listitem" aria-pressed={selected === item.id} onClick={() => setSelected(item.id)}>
+              {item.name.replace("The ", "")}
+            </button>
+          ))}
+        </div>
+        <div>
+          {organ && exhibit ? (
+            <article key={organ.id}>
+              <button type="button" onClick={() => setSelected(null)} className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim hover:text-bone">← The living planet</button>
+              <p className="mt-5 font-mono text-xs uppercase tracking-[0.22em] text-sand">{organ.name}</p>
+              <h2 className="mt-2 font-display text-4xl font-light leading-tight md:text-5xl">{organ.system}</h2>
+              <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.2em] text-bio">The technology</p>
+              <p className="mt-3 max-w-xl text-lg leading-relaxed text-bone">{organ.technology}</p>
+              <p className="mt-4 max-w-xl leading-relaxed text-mist">{exhibit.invention}</p>
+              <p className="mt-6 max-w-xl leading-relaxed text-mist"><span className="text-bone">From the organ. </span>{organ.principle}</p>
+              <p className="mt-3 max-w-xl leading-relaxed text-mist"><span className="text-sand">For Oman. </span>{organ.oman}</p>
+              {exhibit.beyond && <p className="mt-4 max-w-xl leading-relaxed text-bone">{exhibit.beyond}</p>}
+              <details className="nabd-fold max-w-xl">
+                <summary>Try the model</summary>
+                <div className="mt-4">
+                  <Workbench
+                    organId={organ.id}
+                    controls={controls}
+                    result={played}
+                    bare={bare}
+                    local={local}
+                    onChange={(key, value) => setLocal((state) => ({ ...state, [key]: value }))}
+                    onToggle={() => setLocal((state) => ({ ...state, systems: { ...state.systems, [organ.id]: !state.systems[organ.id] } }))}
+                  />
+                </div>
+              </details>
+            </article>
+          ) : (
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.28em] text-sand">A biomimetic sustainability system · Oman Vision 2040</p>
+              <p className="mt-5 font-display text-3xl font-light text-sand md:text-4xl">Humanity: The Living Planet</p>
+              <h1 className="mt-3 font-display text-[clamp(2.3rem,4.6vw,4.4rem)] font-light leading-[0.95]">
+                What if Oman 2040 could <em className="nabd-shine font-normal text-bio">think</em>, <em className="nabd-shine font-normal text-sand">adapt</em> and <em className="nabd-shine font-normal text-bone">heal</em> like a human body?
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-mist">
+                Nabd — Arabic for <span className="text-bone">pulse</span> — is a self-regulating resource system for water, energy and waste. Press an organ. The technology it inspired opens here.
+              </p>
+              <p className="mt-3 max-w-xl leading-relaxed text-mist">Surviving is the minimum. The aim is to keep developing — with comfort, innovation and prosperity — while harm to any generation is not part of the plan.</p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a href={sitePath("/experience")} className="rounded-full bg-bio px-6 py-3 font-semibold text-ink">Play — become the brain</a>
+                <a href={sitePath("/body")} className="rounded-full border border-line px-6 py-3 text-bone hover:border-bone">The Human Body</a>
+                <a href="#concept" className="rounded-full border border-line px-6 py-3 text-mist hover:border-bone hover:text-bone">How it works</a>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -218,54 +358,6 @@ export default function Home() {
                 <li className="rounded-xl border border-line p-4"><span className="text-bone">If conditions change,</span> it adapts instead of running at maximum.</li>
               </ul>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="organs" className="mx-auto max-w-7xl px-5 py-24">
-        <Kicker>02 · Six organs, six technologies</Kicker>
-        <h2 className="mt-4 max-w-3xl font-display text-4xl font-light leading-tight md:text-5xl">Biological mechanisms, translated into infrastructure.</h2>
-        <p className="mt-4 max-w-2xl text-mist">Select an organ on the body or in the list.</p>
-        <div className="mt-12 grid items-start gap-10 lg:grid-cols-[minmax(0,340px)_1fr]">
-          <div className="mx-auto w-full max-w-[340px] lg:sticky lg:top-24">
-            <Body organs={previewOrgans(74)} health={74} selected={selected} highlight={[selected]} onSelect={setSelected} className="h-auto w-full" />
-          </div>
-          <div>
-            <div className="flex flex-wrap gap-2">
-              {ORGANS.map((item) => (
-                <button key={item.id} type="button" onClick={() => setSelected(item.id)} className={`rounded-full border px-4 py-2 font-mono text-xs uppercase tracking-[0.14em] transition ${selected === item.id ? "border-bio bg-bio/10 text-bio" : "border-line text-mist hover:border-bone hover:text-bone"}`}>
-                  {item.name.replace("The ", "")}
-                </button>
-              ))}
-            </div>
-            <article key={organ.id} className="rise mt-8 rounded-3xl border border-line bg-ink-2/70 p-8 md:p-10" style={{ boxShadow: `0 0 0 1px ${colorFor(previewOrgans(74)[selected])}55, 0 20px 50px rgba(0,0,0,0.28)` }}>
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-sand">{organ.role}</p>
-              <h3 className="mt-2 font-display text-4xl md:text-5xl">{organ.name}</h3>
-              <div className="nabd-bridge mt-8">
-                <div>
-                  <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">Biological principle</p>
-                  <p className="mt-2 text-lg leading-relaxed text-bone">{organ.principle}</p>
-                </div>
-                <div className="nabd-bridge-mark" aria-hidden="true">→</div>
-                <div>
-                  <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-bio">Our technology</p>
-                  <p className="mt-2 text-lg leading-relaxed text-bone">{organ.technology}</p>
-                </div>
-              </div>
-              <div className="mt-6 max-w-xs">
-                <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-                  <span>Organ reading</span>
-                  <span className="text-bone">{organReading}</span>
-                </div>
-                <div className="nabd-meter" aria-hidden="true"><i style={{ width: `${organReading}%`, background: colorFor(organReading) }} /></div>
-              </div>
-              <div className="mt-8 flex flex-wrap gap-2">
-                {organ.monitors.map((item) => (
-                  <span key={item} className="rounded-md bg-ink-3 px-3 py-1 font-mono text-xs text-mist">senses: {item}</span>
-                ))}
-              </div>
-              <p className="mt-8 border-l-2 border-sand pl-4 text-mist"><span className="text-sand">Why it matters for Oman — </span>{organ.oman}</p>
-            </article>
           </div>
         </div>
       </section>
@@ -378,8 +470,8 @@ export default function Home() {
       <section className="border-y border-line/60 bg-ink-2/50">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 lg:grid-cols-2">
           <figure className="overflow-hidden rounded-3xl border border-line">
-            <img src={`${import.meta.env.BASE_URL}img/original-prototype.png`} alt="Our first exhibition model: a human-shaped figure with glowing organs, labelled as parts of the planet." loading="lazy" width="900" height="960" className="h-auto w-full opacity-90" />
-            <figcaption className="bg-ink-3 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">Where we started — our first model</figcaption>
+            <img src={`${import.meta.env.BASE_URL}img/vision-lab.jpg`} alt="The Human Body: Nature's Innovation Lab, with organ specimens arranged around a glass body." loading="lazy" width="1024" height="682" className="h-auto w-full" />
+            <figcaption className="bg-ink-3 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">The Human Body: Nature's Innovation Lab</figcaption>
           </figure>
           <div>
             <Kicker>07 · From model to invention</Kicker>
@@ -406,10 +498,13 @@ export default function Home() {
         <blockquote className="font-display text-2xl font-light leading-relaxed text-mist md:text-3xl">
           “Nature has already solved many problems that humanity is still trying to solve. Instead of simply studying the body, we can learn from <span className="text-bone">how it works</span> and use those principles to design a more resilient future for Oman.”
         </blockquote>
+        <p className="mx-auto mt-10 max-w-3xl text-lg leading-relaxed text-mist">
+          Survival, and leaving enough that the next generation can also survive, is the minimum. The ambition is past that: to strive, to enjoy, and to develop quickly, while harm to any generation is not part of the plan. The heart of Nabd is energy that could support that pace. The kidneys, lungs, liver and skin are the inventions that run on it.
+        </p>
         <p className="mx-auto mt-16 max-w-3xl font-display text-4xl leading-tight md:text-6xl">
           If the human body can survive by working as one interconnected system, <em className="text-bio">why shouldn’t our future do the same?</em>
         </p>
-        <a href={sitePath("/experience")} className="mt-12 inline-block rounded-full bg-bio px-8 py-4 font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_32px_rgba(75,227,180,0.55)]">Become the brain of Oman 2040</a>
+        <a href={sitePath("/experience")} className="mt-12 inline-block rounded-full bg-bio px-8 py-4 font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_32px_rgba(198,165,106,0.45)]">Become the brain of Oman 2040</a>
       </section>
 
       <footer className="border-t border-line/60">

@@ -13,6 +13,8 @@ function pagesRoutes() {
       copyFileSync(index, resolve(dist, "404.html"));
       mkdirSync(resolve(dist, "experience"), { recursive: true });
       copyFileSync(index, resolve(dist, "experience/index.html"));
+      mkdirSync(resolve(dist, "body"), { recursive: true });
+      copyFileSync(index, resolve(dist, "body/index.html"));
     },
   };
 }
