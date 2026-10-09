@@ -124,9 +124,9 @@ function drawBoard(figure) {
   canvas.height = 1280;
   const ctx = canvas.getContext("2d");
   const wash = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  wash.addColorStop(0, "#1a1e28");
-  wash.addColorStop(0.18, "#12151c");
-  wash.addColorStop(1, "#0b0d12");
+  wash.addColorStop(0, "#1a1d24");
+  wash.addColorStop(0.18, "#12110e");
+  wash.addColorStop(1, "#07080c");
   ctx.fillStyle = wash;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const sheen = ctx.createLinearGradient(0, 0, 0, 360);
@@ -172,8 +172,8 @@ function drawBoard(figure) {
 
   const strip = ctx.createLinearGradient(72, 0, 860, 0);
   strip.addColorStop(0, "#6a5438");
-  strip.addColorStop(0.55, "#3d4c5c");
-  strip.addColorStop(1, "#243246");
+  strip.addColorStop(0.55, "#c6a56a");
+  strip.addColorStop(1, "#e6d3a4");
   ctx.fillStyle = strip;
   roundRect(ctx, 72, 1172, 760, 72, 12);
   ctx.fill();
@@ -194,17 +194,17 @@ function galleryFloor() {
   canvas.width = 1024;
   canvas.height = 1024;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#16181f";
+  ctx.fillStyle = "#12110e";
   ctx.fillRect(0, 0, 1024, 1024);
   const stone = ctx.createRadialGradient(512, 512, 30, 512, 512, 520);
-  stone.addColorStop(0, "#22262e");
-  stone.addColorStop(0.42, "#14171d");
-  stone.addColorStop(1, "#0a0c10");
+  stone.addColorStop(0, "#1a1d24");
+  stone.addColorStop(0.42, "#14120f");
+  stone.addColorStop(1, "#07080c");
   ctx.fillStyle = stone;
   ctx.fillRect(0, 0, 1024, 1024);
   for (let i = 0; i < 5000; i += 1) {
-    const shade = 16 + Math.random() * 28;
-    ctx.fillStyle = `rgba(${shade}, ${shade + 1}, ${shade + 4}, 0.07)`;
+    const shade = 18 + Math.random() * 28;
+    ctx.fillStyle = `rgba(${shade + 6}, ${shade + 2}, ${shade - 4}, 0.07)`;
     ctx.fillRect(Math.random() * 1024, Math.random() * 1024, 2, 2);
   }
   ctx.strokeStyle = "rgba(214, 188, 134, 0.55)";
@@ -232,8 +232,8 @@ function roomWall() {
   const ctx = canvas.getContext("2d");
   const wash = ctx.createLinearGradient(0, 0, 0, 512);
   wash.addColorStop(0, "#07080c");
-  wash.addColorStop(0.28, "#151922");
-  wash.addColorStop(0.62, "#12151c");
+  wash.addColorStop(0.28, "#1a1d24");
+  wash.addColorStop(0.62, "#14120f");
   wash.addColorStop(0.86, "#1c1914");
   wash.addColorStop(1, "#0e0d0b");
   ctx.fillStyle = wash;
@@ -249,9 +249,9 @@ function drawPool() {
   canvas.height = 512;
   const ctx = canvas.getContext("2d");
   const glow = ctx.createRadialGradient(256, 256, 20, 256, 256, 250);
-  glow.addColorStop(0, "rgba(214,232,240,0.55)");
-  glow.addColorStop(0.35, "rgba(150,186,204,0.18)");
-  glow.addColorStop(1, "rgba(150,186,204,0)");
+  glow.addColorStop(0, "rgba(230,211,164,0.5)");
+  glow.addColorStop(0.35, "rgba(198,165,106,0.16)");
+  glow.addColorStop(1, "rgba(198,165,106,0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, 512, 512);
   return canvasTexture(canvas);
@@ -305,44 +305,138 @@ function settleSpecimen(canvas) {
   ctx.putImageData(image, 0, 0);
 }
 
-function chargeFigure(canvas) {
+function plantFigure(canvas) {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = image.data;
   const width = canvas.width;
   const height = canvas.height;
+  let toneR = 0;
+  let toneG = 0;
+  let toneB = 0;
+  let toneCount = 0;
+  for (let y = 500; y < 780; y += 2) {
+    for (let x = 95; x < 185; x += 2) {
+      const index = (y * width + x) * 4;
+      if (data[index + 3] < 200) continue;
+      const red = data[index];
+      const green = data[index + 1];
+      const blue = data[index + 2];
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      if (max === 0 || (max - min) / max > 0.45) continue;
+      toneR += red;
+      toneG += green;
+      toneB += blue;
+      toneCount += 1;
+    }
+  }
+  toneR /= toneCount || 1;
+  toneG /= toneCount || 1;
+  toneB /= toneCount || 1;
+  const toneLight = toneR * 0.3 + toneG * 0.5 + toneB * 0.2;
+  const legLine = height * 0.6;
   for (let y = 0; y < height; y += 1) {
-    let left = width;
-    let right = 0;
+    const fade = y < legLine ? 0 : Math.min(1, (y - legLine) / 46);
     for (let x = 0; x < width; x += 1) {
-      if (data[(y * width + x) * 4 + 3] > 28) {
-        if (x < left) left = x;
-        if (x > right) right = x;
+      const index = (y * width + x) * 4;
+      const alpha = data[index + 3];
+      if (alpha < 8) {
+        data[index + 3] = 0;
+        continue;
+      }
+      if (fade === 0 || x < width * 0.24 || x > width * 0.76) continue;
+      const red = data[index];
+      const green = data[index + 1];
+      const blue = data[index + 2];
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      const sat = max === 0 ? 0 : (max - min) / max;
+      if (sat > 0.48) continue;
+      const light = Math.max(1, red * 0.3 + green * 0.5 + blue * 0.2);
+      const lifted = 58 + (Math.min(light, 80) / 80) * 52;
+      const mapped = light + (lifted - light) * fade;
+      const scale = mapped / toneLight;
+      const mix = 0.78 * fade;
+      data[index] = Math.min(255, Math.round(red * (1 - mix) + toneR * scale * mix));
+      data[index + 1] = Math.min(255, Math.round(green * (1 - mix) + toneG * scale * mix));
+      data[index + 2] = Math.min(255, Math.round(blue * (1 - mix) + toneB * scale * mix));
+    }
+  }
+  const calfLine = Math.floor(height * 0.7);
+  for (let y = calfLine; y < height; y += 1) {
+    const fade = Math.min(1, (y - calfLine) / 36);
+    for (const [x0, x1] of [[170, 370], [370, 560]]) {
+      let min = -1;
+      let max = -1;
+      for (let x = x0; x < x1; x += 1) {
+        if (data[(y * width + x) * 4 + 3] > 18) {
+          if (min < 0) min = x;
+          max = x;
+        }
+      }
+      const span = max - min;
+      if (min < 0 || span < 28 || span > 160) continue;
+      for (let x = min; x <= max; x += 1) {
+        const index = (y * width + x) * 4;
+        if (data[index + 3] > 36) continue;
+        const round = Math.sin(((x - min) / span) * Math.PI);
+        const light = (54 + round * 34) * fade;
+        const scale = light / toneLight;
+        data[index] = Math.min(255, Math.round(toneR * scale));
+        data[index + 1] = Math.min(255, Math.round(toneG * scale));
+        data[index + 2] = Math.min(255, Math.round(toneB * scale));
+        data[index + 3] = Math.round((200 + round * 40) * fade);
       }
     }
-    if (right <= left) continue;
-    const span = Math.max(1, right - left);
-    for (let x = left; x <= right; x += 1) {
-      const index = (y * width + x) * 4;
-      if (data[index + 3] < 8) continue;
-      let red = data[index];
-      let green = data[index + 1];
-      let blue = data[index + 2];
-      const edge = Math.min(x - left, right - x) / span;
-      const rim = edge < 0.045 ? (0.045 - edge) / 0.045 : 0;
-      if (blue > red + 6) {
-        red = Math.min(255, red * 0.9);
-        green = Math.min(255, green * 1.06 + 16);
-        blue = Math.min(255, blue * 1.14 + 28);
-      } else {
-        const gray = (red + green + blue) / 3;
-        red = Math.min(255, (gray + (red - gray) * 1.2) * 1.08);
-        green = Math.min(255, (gray + (green - gray) * 1.12) * 1.04);
-        blue = Math.min(255, gray + (blue - gray) * 1.05);
+  }
+  const yLimit = Math.floor(height * 0.1);
+  const hairX0 = Math.floor(width * 0.34);
+  const hairX1 = Math.floor(width * 0.66);
+  const tops = new Int16Array(width).fill(-1);
+  for (let x = hairX0; x < hairX1; x += 1) {
+    for (let y = Math.floor(height * 0.02); y < yLimit + 50; y += 1) {
+      let solid = 0;
+      for (let k = 0; k < 8; k += 1) {
+        if (data[((y + k) * width + x) * 4 + 3] > 220) solid += 1;
       }
-      data[index] = Math.min(255, red + rim * 30);
-      data[index + 1] = Math.min(255, green + rim * 160);
-      data[index + 2] = Math.min(255, blue + rim * 210);
+      if (solid >= 6) {
+        tops[x] = y;
+        break;
+      }
+    }
+  }
+  const hairline = new Int16Array(tops);
+  for (let x = hairX0; x < hairX1; x += 1) {
+    if (tops[x] < 0) continue;
+    let sum = 0;
+    let count = 0;
+    for (let dx = -8; dx <= 8; dx += 1) {
+      const xx = x + dx;
+      if (xx < 0 || xx >= width || tops[xx] < 0) continue;
+      sum += tops[xx];
+      count += 1;
+    }
+    if (count) hairline[x] = Math.round(sum / count);
+  }
+  for (let x = hairX0; x < hairX1; x += 1) {
+    const top = hairline[x];
+    if (top < 0 || top > yLimit) continue;
+    for (let y = Math.max(0, top - 55); y < top - 8; y += 1) {
+      data[(y * width + x) * 4 + 3] = 0;
+    }
+    for (let y = top - 8; y < top + 34; y += 1) {
+      if (y < 0 || y >= height) continue;
+      const index = (y * width + x) * 4;
+      const into = y - top;
+      if (into > 26) {
+        const light = data[index] * 0.3 + data[index + 1] * 0.5 + data[index + 2] * 0.2;
+        if (data[index + 3] > 180 && light > 130) continue;
+      }
+      data[index] = 12;
+      data[index + 1] = 11;
+      data[index + 2] = 12;
+      data[index + 3] = 255;
     }
   }
   ctx.putImageData(image, 0, 0);
@@ -374,35 +468,6 @@ function curvedPlane(width, height, bend = 0.035) {
   return geometry;
 }
 
-function figureGlow(source) {
-  const canvas = document.createElement("canvas");
-  canvas.width = source.width;
-  canvas.height = source.height;
-  const ctx = canvas.getContext("2d");
-  ctx.filter = "blur(18px)";
-  ctx.drawImage(source, 0, 0);
-  ctx.filter = "none";
-  ctx.globalCompositeOperation = "source-in";
-  ctx.fillStyle = "rgba(70, 196, 255, 1)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  return canvasTexture(canvas);
-}
-
-function columnGlass() {
-  return new THREE.MeshPhysicalMaterial({
-    color: 0xe7eef4,
-    metalness: 0,
-    roughness: 0.06,
-    transmission: 1,
-    thickness: 0.35,
-    ior: 1.45,
-    transparent: true,
-    opacity: 1,
-    side: THREE.DoubleSide,
-    depthWrite: false,
-  });
-}
-
 function glassShell(strength) {
   return new THREE.ShaderMaterial({
     transparent: true,
@@ -425,7 +490,7 @@ function glassShell(strength) {
       varying vec3 vView;
       void main() {
         float fresnel = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.1);
-        gl_FragColor = vec4(0.9, 0.95, 0.98, fresnel * strength);
+        gl_FragColor = vec4(0.96, 0.91, 0.78, fresnel * strength);
       }
     `,
   });
@@ -534,15 +599,15 @@ export function mountMuseum(canvas, { figures, onPick }) {
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.72;
+  scene.environmentIntensity = 0.46;
 
   const floor = new THREE.Mesh(
     new THREE.CircleGeometry(12, 96),
     new THREE.MeshPhysicalMaterial({
       map: galleryFloor(),
-      color: 0xffffff,
-      metalness: 0.32,
-      roughness: 0.48,
+      color: 0xd9cbb8,
+      metalness: 0.16,
+      roughness: 0.62,
       clearcoat: 0.28,
       clearcoatRoughness: 0.4,
       envMapIntensity: 0.32,
@@ -581,13 +646,13 @@ export function mountMuseum(canvas, { figures, onPick }) {
   key.shadow.bias = -0.0004;
   key.shadow.normalBias = 0.02;
   scene.add(key);
-  scene.add(new THREE.HemisphereLight(0xc5d0dc, 0x16130f, 0.28));
-  const fill = new THREE.DirectionalLight(0xb7c6d6, 0.55);
+  scene.add(new THREE.HemisphereLight(0xe6d3a4, 0x16130f, 0.22));
+  const fill = new THREE.DirectionalLight(0xcfc8bc, 0.38);
   fill.position.set(-4.8, 3.8, 3.4);
   scene.add(fill);
-  const cool = new THREE.PointLight(0x8fd4ff, 8, 1.7, 2);
-  cool.position.set(0, 1.4, 0.12);
-  scene.add(cool);
+  const lamp = new THREE.PointLight(0xe6d3a4, 0.55, 3.2, 2);
+  lamp.position.set(0.2, 1.7, 1.4);
+  scene.add(lamp);
 
   const stone = new THREE.MeshPhysicalMaterial({
     color: 0x101218,
@@ -596,67 +661,65 @@ export function mountMuseum(canvas, { figures, onPick }) {
     clearcoat: 0.72,
     clearcoatRoughness: 0.2,
   });
-  const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.68, 0.26, 72), stone);
+  const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.84, 0.9, 0.26, 72), stone);
   pedestal.position.y = 0.13;
   pedestal.castShadow = true;
   pedestal.receiveShadow = true;
   scene.add(pedestal);
   const footRing = new THREE.Mesh(
-    new THREE.TorusGeometry(0.64, 0.011, 16, 96),
+    new THREE.TorusGeometry(0.88, 0.012, 16, 96),
     new THREE.MeshPhysicalMaterial({ color: 0xd4bc8a, metalness: 1, roughness: 0.16 }),
   );
   footRing.rotation.x = Math.PI / 2;
   footRing.position.y = 0.27;
   scene.add(footRing);
 
-  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.72, 96, 1, true), columnGlass());
-  tube.position.set(0, 1.16, 0);
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.08, 96, 1, true), glassShell(0.28));
+  tube.position.set(0, 1.34, 0);
   tube.rotation.y = Math.PI;
+  tube.renderOrder = 3;
   tube.raycast = () => {};
   scene.add(tube);
 
   const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(0.52, 0.012, 16, 96),
-    new THREE.MeshBasicMaterial({ color: 0xf4f7fb }),
+    new THREE.TorusGeometry(0.76, 0.012, 16, 96),
+    new THREE.MeshBasicMaterial({ color: 0xefe8dc }),
   );
   halo.rotation.x = Math.PI / 2;
   halo.position.set(0, 0.32, 0);
   scene.add(halo);
   const haloSoft = new THREE.Mesh(
-    new THREE.TorusGeometry(0.66, 0.035, 12, 80),
-    new THREE.MeshBasicMaterial({ color: 0xd7ebf4, transparent: true, opacity: 0.34, depthWrite: false }),
+    new THREE.TorusGeometry(0.9, 0.04, 12, 80),
+    new THREE.MeshBasicMaterial({ color: 0xc6a56a, transparent: true, opacity: 0.34, depthWrite: false }),
   );
   haloSoft.rotation.x = Math.PI / 2;
   haloSoft.position.set(0, 0.31, 0);
   scene.add(haloSoft);
   const lip = new THREE.Mesh(
-    new THREE.TorusGeometry(0.49, 0.008, 12, 80),
-    new THREE.MeshBasicMaterial({ color: 0xf7f8fb }),
+    new THREE.TorusGeometry(0.69, 0.008, 12, 80),
+    new THREE.MeshBasicMaterial({ color: 0xe6d3a4 }),
   );
   lip.rotation.x = Math.PI / 2;
-  lip.position.set(0, 2.02, 0);
+  lip.position.set(0, 2.38, 0);
   scene.add(lip);
 
-  const bodyHeight = 1.62;
+  const bodyHeight = 1.98;
+  const bodyBase = 0.36;
   const bodyWidth = bodyHeight * (720 / 1280);
   const figure = new THREE.Group();
-  const glow = new THREE.Mesh(
-    new THREE.PlaneGeometry(bodyWidth * 1.08, bodyHeight * 1.04),
+  const body = new THREE.Mesh(
+    curvedPlane(bodyWidth, bodyHeight, 0.012),
     new THREE.MeshBasicMaterial({
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      opacity: 0.38,
+      toneMapped: false,
+      alphaTest: 0,
     }),
   );
-  glow.position.z = -0.04;
-  const body = new THREE.Mesh(
-    curvedPlane(bodyWidth, bodyHeight, 0.07),
-    new THREE.MeshBasicMaterial({ transparent: true, depthWrite: true }),
-  );
   body.position.z = 0.02;
-  figure.add(glow, body);
-  figure.position.set(0, 0.34 + bodyHeight / 2, 0);
+  body.renderOrder = 2;
+  figure.add(body);
+  figure.position.set(0, bodyBase + bodyHeight / 2, 0);
   scene.add(figure);
 
   const stations = [];
@@ -674,20 +737,17 @@ export function mountMuseum(canvas, { figures, onPick }) {
   const base = import.meta.env.BASE_URL;
   Promise.all([
     document.fonts.ready,
-    loadImage(`${base}img/museum-body.png`),
+    loadImage(`${base}img/anatomy-body.png`),
     ...figures.map((figure) => loadImage(`${base}img/figures/${figure.file}`)),
   ]).then((loaded) => {
     if (!alive) return;
     const [, bodyImage, ...organImages] = loaded;
     const bodyMap = knockOut(bodyImage);
-    chargeFigure(bodyMap.image);
+    plantFigure(bodyMap.image);
     bodyMap.needsUpdate = true;
-    const glowMap = figureGlow(bodyMap.image);
-    textures.push(bodyMap, glowMap);
+    textures.push(bodyMap);
     body.material.map = bodyMap;
-    glow.material.map = glowMap;
     body.material.needsUpdate = true;
-    glow.material.needsUpdate = true;
     figures.forEach((figure, index) => {
       const map = trimMap(organImages[index]);
       textures.push(map);
@@ -756,15 +816,12 @@ export function mountMuseum(canvas, { figures, onPick }) {
 
     const pulse = 0.5 + 0.5 * Math.sin(t * 1.6);
     const beat = Math.pow(0.5 + 0.5 * Math.sin(t * 3.1), 2);
-    const breath = 1 + Math.sin(t * 1.35) * (reduce ? 0 : 0.032);
-    figure.scale.setScalar(breath);
-    figure.rotation.y = reduce ? 0 : Math.sin(t * 0.55) * 0.14;
-    figure.position.y = (0.34 + 1.62 / 2) + (reduce ? 0 : Math.sin(t * 1.35) * 0.03);
-    glow.material.opacity = 0.18 + pulse * 0.5;
-    glow.scale.setScalar(1 + pulse * (reduce ? 0 : 0.06));
-    cool.intensity = 5.5 + beat * 9;
-    cool.position.x = reduce ? 0 : Math.sin(t * 0.9) * 0.34;
-    cool.position.z = reduce ? 0.12 : Math.cos(t * 0.9) * 0.34;
+    figure.scale.setScalar(1);
+    figure.rotation.y = 0;
+    figure.position.y = bodyBase + bodyHeight / 2;
+    lamp.intensity = 0.4 + beat * 0.25;
+    lamp.position.x = reduce ? 0 : Math.sin(t * 0.9) * 0.34;
+    lamp.position.z = reduce ? 0.12 : Math.cos(t * 0.9) * 0.34;
     halo.rotation.z = reduce ? 0 : t * 0.7;
     halo.scale.setScalar(1 + beat * (reduce ? 0 : 0.12));
     lip.rotation.z = reduce ? 0 : -t * 0.4;

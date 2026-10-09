@@ -5,24 +5,18 @@ import {
   FAILURE,
   JOURNEY,
   METRICS,
-  PRECRISIS,
   STAGES,
-  STRATEGIES,
   add,
   colorFor,
   findStrategy,
   forecast,
-  formatEffects,
   organHealth,
   shockSteps,
   stageFor,
   systemHealth,
-  SYNERGIES,
   toneClass,
   toneMark,
-  weakest,
   wellness,
-  DRIFT,
 } from "./engine.js";
 import { Header } from "./Header.jsx";
 
@@ -60,11 +54,43 @@ function progressFor(xp) {
   };
 }
 const ORGAN_COLOR = { brain: "#c6a56a", heart: "#d4656a", lungs: "#c6a56a", kidneys: "#c6a56a", liver: "#c6a56a", skin: "#c6a56a" };
-const HAND = {
-  water: ["recovery", "desal", "solar", "conserve", "sensors", "grid"],
-  energy: ["solar", "skin", "grid", "diesel", "ac", "sensors"],
-  waste: ["biorefinery", "farms", "landfill", "greening", "recovery", "imports"],
-  failure: ["recovery", "solar", "skin", "biorefinery", "grid", "desal", "diesel", "greening"],
+const ROUNDS = {
+  water: {
+    ask: "The taps are running low.",
+    situation: "Summer demand is up. Pick the decision you would make for the city’s water.",
+    options: [
+      { id: "desal", mark: "A", line: "Make more water from the sea. Fast, but it spends a lot of energy and leaves brine." },
+      { id: "recovery", mark: "B", line: "Clean used water and keep what is still useful, the way a kidney does." },
+      { id: "conserve", mark: "C", line: "Find leaks and use less. Careful, and it will not fill a big gap alone." },
+    ],
+  },
+  energy: {
+    ask: "The grid is straining.",
+    situation: "Demand is ahead of supply, and the air is getting worse. How do you keep the city powered?",
+    options: [
+      { id: "diesel", mark: "A", line: "Switch on diesel generators. Power comes back tonight. The lungs pay for it." },
+      { id: "solar", mark: "B", line: "Build solar fields and storage. Clean power, if you can wait for it." },
+      { id: "skin", mark: "C", line: "Shade the buildings so they need less cooling in the first place." },
+    ],
+  },
+  waste: {
+    ask: "The city is filling up with waste.",
+    situation: "More people, more rubbish, less food in reserve. What should happen to the waste?",
+    options: [
+      { id: "landfill", mark: "A", line: "Open another landfill. The streets look clear. The problem moves outside the city." },
+      { id: "biorefinery", mark: "B", line: "Turn organic waste into compost and gas, the way a liver turns waste into something useful." },
+      { id: "farms", mark: "C", line: "Grow food indoors. It feeds people, and it asks for water and electricity." },
+    ],
+  },
+  failure: {
+    ask: "Everything hits at once.",
+    situation: "A heatwave lands in a drought. You get one decision. Choose what the city should protect.",
+    options: [
+      { id: "ac", mark: "A", line: "Run every air conditioner. Rooms cool down. Energy and the air outside get worse." },
+      { id: "grid", mark: "B", line: "Send water and energy to whichever system is failing, the way blood moves to where it is needed." },
+      { id: "recovery", mark: "C", line: "Recover water before making more. It costs some energy, and it wastes less." },
+    ],
+  },
 };
 const ALERTS = [["Water availability", "↓"], ["Temperature", "↑"], ["Energy demand", "↑"], ["Waste", "↑"], ["Food security", "↓"]];
 
@@ -152,9 +178,9 @@ function Intro({ names, setNames, onStart }) {
       <Header variant="experience" />
       <main className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 lg:grid-cols-[1fr_minmax(0,340px)]">
         <div>
-          <p className="rise font-mono text-xs uppercase tracking-[0.3em] text-sand">Live simulation</p>
+          <p className="rise font-mono text-xs uppercase tracking-[0.3em] text-sand">Decision game</p>
           <h1 className="rise mt-4 font-display text-5xl font-light leading-[1.02] md:text-7xl" style={{ animationDelay: "0.1s" }}>You are the <em className="text-bio">brain</em> of Oman 2040.</h1>
-          <p className="rise mt-6 max-w-xl text-lg text-mist" style={{ animationDelay: "0.2s" }}>A shock hits the environment. Choose a decision, watch water, energy, heat and air respond, then apply it. Improving the environment earns XP. A decision that harms another system costs XP.</p>
+          <p className="rise mt-6 max-w-xl text-lg text-mist" style={{ animationDelay: "0.2s" }}>Four short challenges. Each one, you make a single decision. A quick fix can help one part of the body and hurt another. A careful choice earns more XP.</p>
           <ol className="rise mt-6 flex flex-wrap gap-2" style={{ animationDelay: "0.25s" }}>
             {[["2028", "Water"], ["2032", "Energy"], ["2036", "Waste"], ["2040", "Crisis"]].map(([year, label]) => (
               <li key={year} className={`rounded-full border px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] ${year === "2040" ? "border-ember/60 text-ember" : "border-line text-mist"}`}>{year} {label}</li>
@@ -162,21 +188,21 @@ function Intro({ names, setNames, onStart }) {
           </ol>
           <div className="rise mt-10 grid gap-4 md:grid-cols-2" style={{ animationDelay: "0.3s" }}>
             <div className="flex flex-col rounded-3xl border border-line bg-ink-2/70 p-6">
-              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-bio">Visitor journey</p>
-              <h2 className="mt-2 font-display text-2xl">Four years, one XP bar</h2>
-              <p className="mt-2 flex-1 text-sm text-mist">Water, energy, waste, then the 2040 crisis. Each decision changes the environment. A streak of improvements raises the XP you earn.</p>
-              <button type="button" onClick={() => onStart("solo")} className="mt-6 rounded-full bg-bio px-5 py-3 font-semibold text-ink transition hover:-translate-y-0.5">Start the journey</button>
+              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-bio">Play</p>
+              <h2 className="mt-2 font-display text-2xl">Four decisions</h2>
+              <p className="mt-2 flex-1 text-sm text-mist">Water, then energy, then waste, then 2040. One choice each time. Helpful decisions in a row earn extra XP.</p>
+              <button type="button" onClick={() => onStart("solo")} className="mt-6 rounded-full bg-bio px-5 py-3 font-semibold text-ink transition hover:-translate-y-0.5">Start the game</button>
             </div>
             <div className="flex flex-col rounded-3xl border border-ember/50 bg-ember/5 p-6">
               <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ember">Judging panel</p>
-              <h2 className="mt-2 font-display text-2xl">2040: System failure</h2>
-              <p className="mt-2 text-sm text-mist">Three judges. Three decisions. Agree, then stabilise the environment. The XP is the health you give back.</p>
+              <h2 className="mt-2 font-display text-2xl">Same game, three names</h2>
+              <p className="mt-2 text-sm text-mist">The panel plays the same four decisions and puts their names on the score.</p>
               <div className="mt-4 grid gap-2">
                 {names.map((name, index) => (
                   <input key={index} value={name} maxLength={24} placeholder={`Judge ${index + 1} name (optional)`} onChange={(event) => setNames(names.map((item, itemIndex) => (itemIndex === index ? event.target.value : item)))} className="rounded-lg border border-line bg-ink px-3 py-2 text-sm text-bone placeholder:text-dim focus:border-ember focus:outline-none" />
                 ))}
               </div>
-              <button type="button" onClick={() => onStart("panel")} className="mt-6 rounded-full bg-ember px-5 py-3 font-semibold text-ink transition hover:-translate-y-0.5">Trigger the crisis</button>
+              <button type="button" onClick={() => onStart("panel")} className="mt-6 rounded-full bg-ember px-5 py-3 font-semibold text-ink transition hover:-translate-y-0.5">Play as a panel</button>
             </div>
           </div>
         </div>
@@ -203,7 +229,7 @@ function Alert({ onClose }) {
             </li>
           ))}
         </ul>
-        <p className="mt-8 text-mist">Three decisions. Cooperate — or watch the body fail.</p>
+        <p className="mt-8 text-mist">One decision. Choose what the body should protect.</p>
         <button type="button" onClick={onClose} className="mt-8 rounded-full bg-ember px-6 py-3 font-semibold text-ink">Take control</button>
       </div>
     </div>
@@ -306,7 +332,7 @@ function Budget({ total, spent }) {
 
 function effectLine(strategy) {
   if (strategy.circulate) return "Supports the weakest part of the environment";
-  return formatEffects(strategy.effects);
+  return strategy.consequence;
 }
 
 function Environment({ metrics, preview }) {
@@ -330,12 +356,11 @@ function Environment({ metrics, preview }) {
   );
 }
 
-function Move({ strategy, on, disabled, worth, onClick, onHover }) {
+function Move({ strategy, line, mark, on, onClick, onHover }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
       aria-pressed={on}
       onMouseEnter={() => onHover?.(strategy.id)}
       onMouseLeave={() => onHover?.(null)}
@@ -343,12 +368,11 @@ function Move({ strategy, on, disabled, worth, onClick, onHover }) {
       onBlur={() => onHover?.(null)}
       className={`nabd-move${on ? " is-on" : ""}`}
     >
-      <span className="nabd-move-organ">{strategy.organ}</span>
+      <span className="nabd-move-organ">{mark}</span>
       <span>
         <b>{strategy.name}</b>
-        <em>{effectLine(strategy)}</em>
+        <em>{line}</em>
       </span>
-      <span className={`nabd-move-worth${on || worth == null || worth === 0 ? "" : worth > 0 ? " is-up" : " is-down"}`}>{on ? "Chosen" : worth == null ? "" : `${worth > 0 ? "+" : ""}${worth} XP`}</span>
     </button>
   );
 }
@@ -377,24 +401,31 @@ function Card({ strategy, on, disabled, quiet, intensity, installed, onClick, on
   );
 }
 
-function Response({ metrics, previous, score, done, isLast, nextIsFinal, onNext }) {
-  const before = systemHealth(previous);
-  const after = systemHealth(metrics);
-  const weak = weakest(metrics);
+function shiftLine(before, after) {
+  const parts = Object.keys(METRICS).flatMap((key) => {
+    if (key === "insight") return [];
+    const raw = after[key] - before[key];
+    if (raw === 0) return [];
+    const helpful = METRICS[key].inverse ? raw < 0 : raw > 0;
+    return [{ mag: Math.abs(raw), helpful, text: METRICS[key].short }];
+  }).sort((a, b) => b.mag - a.mag);
+  const improved = parts.filter((item) => item.helpful).slice(0, 2).map((item) => item.text);
+  const strained = parts.filter((item) => !item.helpful).slice(0, 2).map((item) => item.text);
+  const bits = [];
+  if (improved.length) bits.push(`${improved.join(" and ")} improved`);
+  if (strained.length) bits.push(`${strained.join(" and ")} took the strain`);
+  return bits.length ? `${bits.join(". ")}.` : "The body barely moved.";
+}
+
+function Response({ metrics, previous, score, lesson, isLast, nextIsFinal, onNext }) {
   const gained = score?.gained ?? 0;
   return (
-    <div className="mt-6 rounded-3xl border border-line bg-ink-2/70 p-6 md:p-8">
+    <div className="nabd-pop mt-6 rounded-3xl border border-line bg-ink-2/70 p-6 md:p-8">
       <p className={`nabd-score ${gained >= 0 ? "text-bio" : "text-ember"}`}>{gained > 0 ? "+" : ""}{gained} XP</p>
-      <p className="mt-1 font-mono text-xs uppercase tracking-[0.2em] text-dim">{after >= before ? "The environment improved" : "The environment took the strain"}{score?.multiplier > 1 ? ` · ×${score.multiplier} streak` : ""}</p>
-      <div className="mt-4 flex flex-wrap gap-2 font-mono text-xs">
-        <span className="rounded-full border border-line px-3 py-1 text-mist">Health {before} → {after}</span>
-        {score?.good > 0 && <span className="rounded-full border border-bio/40 px-3 py-1 text-bio">Combo ×{score.good}</span>}
-        {score?.bad > 0 && <span className="rounded-full border border-ember/40 px-3 py-1 text-ember">Backlash ×{score.bad}</span>}
-        {score?.strain > 0 && <span className="rounded-full border border-ember/40 px-3 py-1 text-ember">Strain ×{score.strain}</span>}
-      </div>
-      <p className="mt-4 text-mist">Weakest system now: <span className="text-bone">{METRICS[weak.key].label}</span> ({weak.value}/100). {isLast ? "That is where the body would break first." : "Protect it on the next move."}</p>
+      <p className="mt-1 font-mono text-xs uppercase tracking-[0.2em] text-dim">{shiftLine(previous, metrics)}{score?.multiplier > 1 ? " · streak bonus" : ""}</p>
+      <p className="mt-4 text-lg text-bone">{lesson}</p>
       <button type="button" onClick={onNext} className={`mt-6 rounded-full px-6 py-3 font-semibold text-ink ${nextIsFinal ? "bg-ember" : "bg-bio"}`}>
-        {isLast ? "See what the body became" : nextIsFinal ? "Advance to 2040 →" : "Next challenge →"}
+        {isLast ? "See the body in 2040" : nextIsFinal ? "Face 2040" : "Next decision"}
       </button>
     </div>
   );
@@ -404,10 +435,10 @@ function Ending({ metrics, history, log, mode, points, onRestart }) {
   const health = systemHealth(metrics);
   const stage = stageFor(health);
   const verdict = health >= 58
-    ? { title: "The ecosystem comes alive.", text: "Your decisions worked together. Each solved the problem the last one created, and the body regenerated under pressure." }
-    : health >= 42
-      ? { title: "The body survived — barely.", text: "The crisis was contained, but some organs are still stressed. A connected decision earlier could have saved one of them." }
-      : { title: "The system is deteriorating.", text: "Decisions fixed one problem while creating others elsewhere. In a living system, nothing happens in isolation." };
+    ? { title: "The ecosystem comes alive.", text: "Your decisions worked together. The body had enough water, energy and recovery to keep going." }
+    : health >= 48
+      ? { title: "The body held.", text: "Careful decisions kept the organs from pulling each other down. A few systems are still working hard." }
+      : { title: "The system is deteriorating.", text: "Quick fixes solved one problem and strained another. In a living system, that second problem comes back." };
   const skills = useMemo(() => {
     const counts = new Map();
     log.forEach((entry) => {
@@ -467,7 +498,7 @@ function Ending({ metrics, history, log, mode, points, onRestart }) {
         <p className="mx-auto max-w-3xl font-display text-3xl leading-tight md:text-5xl">If the human body can survive by working as one interconnected system, <em className="text-bio">why shouldn’t our future do the same?</em></p>
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <button type="button" onClick={() => onRestart(mode)} className="rounded-full bg-bio px-6 py-3 font-semibold text-ink">Run it again</button>
-          <button type="button" onClick={() => onRestart(mode === "solo" ? "panel" : "solo")} className="rounded-full border border-line px-6 py-3 text-mist hover:border-bone hover:text-bone">{mode === "solo" ? "Try the judging-panel crisis" : "Try the full visitor journey"}</button>
+          <button type="button" onClick={() => onRestart(mode === "solo" ? "panel" : "solo")} className="rounded-full border border-line px-6 py-3 text-mist hover:border-bone hover:text-bone">{mode === "solo" ? "Play as a panel" : "Play solo"}</button>
         </div>
       </div>
     </main>
@@ -483,23 +514,20 @@ export default function Experience() {
   const [previous, setPrevious] = useState(BASE);
   const [installed, setInstalled] = useState([]);
   const [chosen, setChosen] = useState([]);
-  const [agreed, setAgreed] = useState([false, false, false]);
   const [cascade, setCascade] = useState([]);
   const [revealed, setRevealed] = useState(0);
   const [history, setHistory] = useState([]);
   const [log, setLog] = useState([]);
   const [alert, setAlert] = useState(false);
   const [hoverId, setHoverId] = useState(null);
-  const [focusOrgan, setFocusOrgan] = useState(null);
   const [points, setPoints] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lastScore, setLastScore] = useState(null);
-  const [showAll, setShowAll] = useState(false);
 
-  const scenarios = mode === "solo" ? [...JOURNEY, FAILURE] : [FAILURE];
+  const scenarios = [...JOURNEY, FAILURE];
   const scenario = scenarios[round];
   const crisis = scenario?.id === FAILURE.id;
-  const health = systemHealth(metrics);
+  const roundPlay = scenario ? ROUNDS[scenario.id] : null;
   const judges = names.map((name, index) => name.trim() || `Judge ${index + 1}`);
 
   useEffect(() => {
@@ -511,33 +539,28 @@ export default function Experience() {
   const hovered = hoverId ? findStrategy(hoverId) : null;
 
   function begin(nextMode) {
-    const baseline = nextMode === "solo" ? BASE : PRECRISIS;
+    const baseline = BASE;
     setMode(nextMode);
     setPoints(0);
     setStreak(0);
     setLastScore(null);
     setInstalled([]);
     setLog([]);
-    setHistory([{ label: nextMode === "solo" ? "Today" : "2039", health: systemHealth(baseline) }]);
-    openRound(nextMode === "solo" ? [...JOURNEY, FAILURE] : [FAILURE], 0, baseline);
+    setHistory([{ label: "Today", health: systemHealth(baseline) }]);
+    openRound([...JOURNEY, FAILURE], 0, baseline);
   }
 
   function openRound(list, index, incoming) {
     const next = list[index];
-    const drifted = index > 0 ? add(incoming, DRIFT) : incoming;
-    const shocked = add(drifted, next.shock);
-    const steps = shockSteps(next);
-    if (index > 0) {
-      steps.unshift({ phase: "sense", organ: "skin", text: "Years pass: the climate warms and water tables fall (Heat +3 · Water −3)", tone: "bad" });
-    }
+    const shock = Object.fromEntries(Object.entries(next.shock).map(([key, value]) => [key, Math.round(value * 0.45)]));
+    const shocked = add(incoming, shock);
+    const steps = shockSteps({ ...next, shock });
     setRound(index);
     setPrevious(incoming);
     setMetrics(shocked);
     setChosen([]);
-    setAgreed([false, false, false]);
+    setHoverId(null);
     setCascade(steps);
-    setFocusOrgan(null);
-    setShowAll(false);
     setHistory((points) => [...points, { label: `${next.year} shock`, health: systemHealth(shocked) }]);
     setScreen("deciding");
     setAlert(next.id === FAILURE.id);
@@ -545,7 +568,7 @@ export default function Experience() {
   }
 
   function send() {
-    const result = forecast(metrics, chosen, installed, scenario.intensity ?? 1, crisis);
+    const result = forecast(metrics, chosen, installed, scenario.intensity ?? 1, false);
     const next = result.metrics;
     const steps = result.cascade;
     const scored = ratePlay(metrics, result, streak);
@@ -576,54 +599,23 @@ export default function Experience() {
     }
   }
 
-  function toggle(id) {
-    setAgreed([false, false, false]);
-    setChosen((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  function pick(id) {
+    setChosen((current) => (current[0] === id ? [] : [id]));
   }
 
   if (screen === "intro") return <Intro names={names} setNames={setNames} onStart={begin} />;
 
-  const spent = chosen.reduce((total, id) => total + findStrategy(id).cost, 0);
-  const slotsFull = scenario.slots != null && chosen.length >= scenario.slots;
-  const hoverAdds = Boolean(
-    hovered && !chosen.includes(hovered.id) && spent + hovered.cost <= scenario.budget && !(scenario.slots != null && chosen.length >= scenario.slots),
-  );
-  const draft = hoverAdds ? [...chosen, hovered.id] : chosen;
-  const outlook = screen === "deciding" && draft.length ? forecast(metrics, draft, installed, scenario.intensity ?? 1, crisis) : null;
-  const ghost = outlook
-    ? Object.fromEntries(Object.keys(METRICS).map((key) => [key, outlook.metrics[key] - metrics[key]]))
-    : null;
+  const draft = hovered && hovered.id !== chosen[0] ? [hovered.id] : chosen;
+  const outlook = screen === "deciding" && draft.length ? forecast(metrics, draft, installed, scenario.intensity ?? 1, false) : null;
   const previewing = screen === "deciding" && outlook;
   const shownMetrics = previewing ? outlook.metrics : metrics;
   const shownHealth = systemHealth(shownMetrics);
   const liveFocus = screen === "deciding"
-    ? (hovered ? [hovered.organ] : [])
+    ? (hovered ? [hovered.organ] : (chosen[0] ? [findStrategy(chosen[0]).organ] : []))
     : highlight;
-  const focus = [...new Set([...liveFocus, ...(focusOrgan ? [focusOrgan] : [])])];
-  const strains = (outlook?.cascade ?? []).filter((step) => step.phase === "adapt" && step.tone === "bad" && !step.text.startsWith("Chain reaction"));
-  const needsAgreement = crisis && mode === "panel";
-  const canSend = chosen.length > 0 && (scenario.slots == null || chosen.length === scenario.slots) && (!needsAgreement || agreed.every(Boolean));
-  const linkIds = draft;
-  const links = SYNERGIES.filter((item) => {
-    const present = linkIds.includes(item.pair[0]) || installed.includes(item.pair[0]);
-    const other = linkIds.includes(item.pair[1]) || installed.includes(item.pair[1]);
-    const touched = linkIds.includes(item.pair[0]) || linkIds.includes(item.pair[1]);
-    const already = installed.includes(item.pair[0]) && installed.includes(item.pair[1]);
-    return present && other && touched && !already;
-  });
-  const handIds = focusOrgan
-    ? STRATEGIES.filter((item) => item.organ === focusOrgan || item.circulate).map((item) => item.id)
-    : (HAND[scenario.id] ?? STRATEGIES.map((item) => item.id));
-  const visibleIds = [...new Set([...(showAll ? STRATEGIES.map((item) => item.id) : handIds), ...chosen])];
-  const worthOf = (id) => {
-    const card = findStrategy(id);
-    if (chosen.includes(id) || spent + card.cost > scenario.budget || (scenario.slots != null && chosen.length >= scenario.slots)) return null;
-    const score = (ids) => ratePlay(metrics, forecast(metrics, ids, installed, scenario.intensity ?? 1, crisis), streak).gained;
-    const base = chosen.length ? score(chosen) : 0;
-    return score([...chosen, id]) - base;
-  };
-  const xpPreview = outlook ? ratePlay(metrics, outlook, streak).gained : 0;
+  const canSend = chosen.length === 1;
   const rank = progressFor(points);
+  const lesson = chosen[0] ? findStrategy(chosen[0]).consequence : "";
 
   return (
     <div className="grain min-h-screen">
@@ -639,24 +631,18 @@ export default function Experience() {
               <Body
                 organs={organHealth(shownMetrics)}
                 health={shownHealth}
-                highlight={focus}
-                selected={focusOrgan}
-                onSelect={screen === "deciding" ? ((organ) => setFocusOrgan((current) => (current === organ ? null : organ))) : undefined}
-                status={previewing ? "Showing the forecast if these decisions are sent." : ""}
+                highlight={liveFocus}
+                status={previewing ? "The body is showing what this decision would do." : ""}
               />
             </div>
             {screen === "deciding" && (
-              <p className="nabd-play-hint">{focusOrgan ? `${focusOrgan} moves are in the hand.` : "Press an organ to filter the hand."}</p>
+              <p className="nabd-play-hint">Watch the body. A bright organ is coping. A dim one is under strain.</p>
             )}
-            <details className="nabd-fold">
-              <summary>Readings</summary>
-              <MetricList metrics={metrics} previous={previous} ghost={screen === "deciding" ? ghost : null} focus={focusOrgan} onFocus={screen === "deciding" ? ((organ) => setFocusOrgan((current) => (current === organ ? null : organ))) : undefined} />
-            </details>
           </aside>
           <section className="nabd-play-round">
             <div className="nabd-hud">
-              <div><span>Environment</span><strong className={toneClass(stageFor(shownHealth).tone)}>{shownHealth}</strong></div>
-              <div><span>XP</span><strong>{points}<em className={screen === "deciding" && xpPreview > 0 ? "is-up" : screen === "deciding" && xpPreview < 0 ? "is-down" : ""}>{screen === "deciding" && xpPreview > 0 ? `+${xpPreview}` : screen === "deciding" && xpPreview < 0 ? xpPreview : ""}</em></strong></div>
+              <div><span>Body</span><strong className={toneClass(stageFor(shownHealth).tone)}>{shownHealth}</strong></div>
+              <div><span>XP</span><strong>{points}</strong></div>
               <div><span>Level</span><strong>{rank.level}</strong></div>
               <div><span>Year</span><strong>{scenario.year}</strong></div>
             </div>
@@ -669,90 +655,39 @@ export default function Experience() {
               preview={previewing ? outlook.metrics : screen === "response" ? metrics : null}
             />
             <Timeline scenarios={scenarios} round={round} />
-            <header className="nabd-round">
-              <p className={crisis ? "is-crisis" : ""}>{scenario.year} · {crisis ? "Final challenge" : `Challenge ${round + 1}`}</p>
-              <h1>{crisis ? `${scenario.year}: System failure` : scenario.title}</h1>
-              <p className="nabd-brief">{scenario.brief}</p>
-              {screen === "deciding" && cascade.filter((step) => step.phase === "shock").map((step) => (
-                <p key={step.text} className={`nabd-signal${step.tone === "bad" ? " is-bad" : ""}`}>{step.text}</p>
-              ))}
+            <header key={scenario.id} className="nabd-round nabd-enter">
+              <p className={crisis ? "is-crisis" : ""}>{scenario.year} · {crisis ? "Final decision" : `Decision ${round + 1} of 4`}{mode === "panel" ? ` · ${judges.join(" · ")}` : ""}</p>
+              <h1>{roundPlay.ask}</h1>
+              <p className="nabd-brief">{roundPlay.situation}</p>
             </header>
             {screen === "deciding" && (
               <>
                 <div className="nabd-hand-head">
-                  <h2>{crisis ? "Choose three decisions" : "Choose a move"}</h2>
+                  <h2>What do you do?</h2>
                   <div className="nabd-hand-actions">
-                    <Budget total={scenario.budget} spent={spent} />
                     <button type="button" disabled={!canSend} onClick={send} className={`nabd-apply rounded-full px-5 py-2.5 font-semibold text-ink ${crisis ? "bg-ember" : "bg-bio"}`}>
-                      {chosen.length === 0 ? "Choose a decision" : `Apply · ${xpPreview > 0 ? "+" : ""}${xpPreview} XP`}
+                      {chosen.length === 0 ? "Pick one" : "See what happens"}
                     </button>
                   </div>
                 </div>
-                <p className={`nabd-forecast${strains[0] ? " is-bad" : ""}`}>
-                  {outlook
-                    ? `Environment ${health} → ${systemHealth(outlook.metrics)}${links[0] ? ` · ${links[0].good ? "Combo" : "Backlash"}: ${links[0].title}` : ""}${strains[0] ? ` · ${strains[0].text}` : ""}`
-                    : "Select a decision to see how the environment responds."}
-                </p>
-                {focusOrgan && (
-                  <button type="button" onClick={() => setFocusOrgan(null)} className="mt-3 rounded-full border border-bio/50 bg-bio/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-bio">
-                    Focused on {focusOrgan} · show every strategy
-                  </button>
-                )}
-                {crisis && (
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    {[0, 1, 2].map((index) => {
-                      const id = chosen[index];
-                      return (
-                        <div key={index} className={`rounded-2xl border border-dashed p-4 ${id ? "border-ember/60 bg-ink-2" : "border-line"}`}>
-                          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">Decision {index + 1}{mode === "panel" ? ` · ${judges[index]}` : ""}</p>
-                          <p className="mt-1 text-bone">{id ? findStrategy(id).name : "— empty —"}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                <div className="nabd-moves mt-6">
-                  {visibleIds.map((id) => {
-                    const strategy = findStrategy(id);
-                    const selected = chosen.includes(id);
-                    const blocked = !selected && (spent + strategy.cost > scenario.budget || slotsFull);
-                    return (
-                      <Move
-                        key={id}
-                        strategy={strategy}
-                        on={selected}
-                        disabled={blocked}
-                        worth={worthOf(id)}
-                        onClick={() => toggle(id)}
-                        onHover={setHoverId}
-                      />
-                    );
-                  })}
-                </div>
-                <button type="button" onClick={() => setShowAll((value) => !value)} className="mt-4 font-mono text-[11px] uppercase tracking-[0.16em] text-dim hover:text-bone">
-                  {showAll ? "Show this round’s hand" : "Show every move"}
-                </button>
-                <div className="nabd-send">
-                  <div className="nabd-send-row">
-                    <div className="min-w-0 text-sm text-mist">
-                      {chosen.length === 0 ? <span className="text-dim">Nothing selected yet.</span> : <span><span className="text-dim">Selected: </span>{chosen.map((id) => findStrategy(id).name).join(" + ")}</span>}
-                    </div>
-                    {needsAgreement && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">Panel agrees:</span>
-                        {judges.map((judge, index) => (
-                          <button key={judge} type="button" disabled={chosen.length !== 3} onClick={() => setAgreed((flags) => flags.map((flag, flagIndex) => (flagIndex === index ? !flag : flag)))} className={`rounded-full border px-3 py-1 text-xs transition disabled:opacity-40 ${agreed[index] ? "border-bio bg-bio/15 text-bio" : "border-line text-mist hover:border-bone"}`}>
-                            {agreed[index] ? "✓ " : ""}{judge}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <p className="nabd-forecast">{chosen.length === 0 ? "Pick A, B or C. The bars show the tradeoff." : "This is your decision."}</p>
+                <div key={scenario.id} className="nabd-moves mt-6">
+                  {roundPlay.options.map((option) => (
+                    <Move
+                      key={option.id}
+                      strategy={findStrategy(option.id)}
+                      line={option.line}
+                      mark={option.mark}
+                      on={chosen[0] === option.id}
+                      onClick={() => pick(option.id)}
+                      onHover={setHoverId}
+                    />
+                  ))}
                 </div>
               </>
             )}
             {screen === "response" && (
-              <Response metrics={metrics} previous={previous} score={lastScore} done={revealed >= cascade.length} isLast={round === scenarios.length - 1} nextIsFinal={scenarios[round + 1]?.id === FAILURE.id} onNext={advance} />
+              <Response metrics={metrics} previous={previous} score={lastScore} lesson={lesson} isLast={round === scenarios.length - 1} nextIsFinal={scenarios[round + 1]?.id === FAILURE.id} onNext={advance} />
             )}
           </section>
           </div>

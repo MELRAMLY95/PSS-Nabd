@@ -17,20 +17,20 @@ function KidneyScene({ result, local }) {
     <svg className="drawing" viewBox="0 0 860 520" role="img" aria-label="Selective recovery: inflow splits into recovered water and a concentrated remainder.">
       <text x="40" y="48" className="draw-kicker">Engineering mechanism</text>
       <text x="40" y="88" className="draw-title">Select. Recover. Leave less behind.</text>
-      <path d="M40 250 H270 C320 250 360 220 450 210" stroke="#7ec8d6" strokeWidth="8" fill="none" />
-      <path d="M270 250 C330 270 380 300 450 300" stroke="rgba(243,239,230,0.35)" strokeWidth="6" fill="none" />
-      <Dot path="M40 250 H270 C320 250 360 220 450 210" color="#7ec8d6" dur="3.4s" />
+      <path d="M40 250 H270 C320 250 360 220 450 210" stroke="#cfc8bc" strokeWidth="8" fill="none" />
+      <path d="M270 250 C330 270 380 300 450 300" stroke="rgba(239,232,220,0.35)" strokeWidth="6" fill="none" />
+      <Dot path="M40 250 H270 C320 250 360 220 450 210" color="#cfc8bc" dur="3.4s" />
       {Array.from({ length: 10 }, (_, index) => (
         <line key={index} x1={278 + index * 16} y1="168" x2={278 + index * 16} y2="332" stroke="rgba(228,210,168,0.75)" strokeWidth="2" />
       ))}
       <text x="286" y="156" className="draw-note">selective field</text>
-      <path d="M450 210 H820" stroke="#7ec8d6" strokeWidth={recoverWidth} fill="none" />
-      <path d="M450 300 H760" stroke="rgba(243,239,230,0.28)" strokeWidth={wasteWidth} fill="none" />
-      <Dot path="M450 210 H820" color="#7ec8d6" dur="3.2s" />
-      <Dot path="M450 300 H760" color="rgba(243,239,230,0.55)" dur="4.4s" begin="0.4s" />
+      <path d="M450 210 H820" stroke="#cfc8bc" strokeWidth={recoverWidth} fill="none" />
+      <path d="M450 300 H760" stroke="rgba(239,232,220,0.28)" strokeWidth={wasteWidth} fill="none" />
+      <Dot path="M450 210 H820" color="#cfc8bc" dur="3.2s" />
+      <Dot path="M450 300 H760" color="rgba(239,232,220,0.55)" dur="4.4s" begin="0.4s" />
       <text x="560" y="196" className="draw-note">recovered water</text>
       <text x="520" y="340" className="draw-note">concentrated remainder</text>
-      <path d="M40 420 H820" stroke="#c4525a" strokeWidth="2" fill="none" opacity={0.35 + result.shortage / 140} />
+      <path d="M40 420 H820" stroke="#d4656a" strokeWidth="2" fill="none" opacity={0.35 + result.shortage / 140} />
       <text x="40" y="408" className="draw-note">energy drawn by the recovery · model reading {result.shortage}</text>
       <text x="40" y="470" className="draw-note">Inflow {local.waterDemand} · recovered {result.recoveredWater} · still unmet {result.waterGap}</text>
     </svg>
@@ -45,19 +45,19 @@ function HeartScene({ result, local }) {
     <svg className="drawing" viewBox="0 0 860 520" role="img" aria-label="Circulation network: generation, storage, and demand.">
       <text x="40" y="48" className="draw-kicker">Engineering mechanism</text>
       <text x="40" y="88" className="draw-title">Generate. Move. Store. Send it where the load is.</text>
-      <circle cx="110" cy="270" r={22 + local.sun * 0.28} fill="rgba(228,210,168,0.18)" stroke="#e4d2a8" />
+      <circle cx="110" cy="270" r={22 + local.sun * 0.28} fill="rgba(228,210,168,0.18)" stroke="#e6d3a4" />
       <text x="78" y="360" className="draw-note">generation</text>
-      <circle cx="360" cy="270" r="46" fill="none" stroke="#c4525a" strokeWidth="2" />
+      <circle cx="360" cy="270" r="46" fill="none" stroke="#d4656a" strokeWidth="2" />
       <text x="332" y="274" className="draw-note">circulate</text>
-      <path d="M150 270 H310" stroke="#c4525a" fill="none" strokeWidth="2" />
-      <path d="M406 270 H560" stroke="#c4525a" fill="none" strokeWidth="2" />
-      <path d="M560 270 V150 H680" stroke="#e4d2a8" fill="none" strokeWidth="2" />
-      <path d="M620 270 H760" stroke={stressed ? "#d4894a" : "#c4525a"} fill="none" strokeWidth={stressed ? 1.4 : 3} />
-      <path d="M560 270 V400 H760" stroke="#c4525a" fill="none" strokeWidth="2" />
-      <Dot path="M150 270 H310" color="#c4525a" dur="2.4s" />
-      <Dot path="M406 270 H620" color="#c4525a" dur="2.6s" begin="0.2s" />
-      <Dot path="M620 270 H760" color={stressed ? "#d4894a" : "#c4525a"} dur="3s" />
-      <rect x="690" y="80" width="36" height="150" fill="none" stroke="#e4d2a8" />
+      <path d="M150 270 H310" stroke="#d4656a" fill="none" strokeWidth="2" />
+      <path d="M406 270 H560" stroke="#d4656a" fill="none" strokeWidth="2" />
+      <path d="M560 270 V150 H680" stroke="#e6d3a4" fill="none" strokeWidth="2" />
+      <path d="M620 270 H760" stroke={stressed ? "#e08a55" : "#d4656a"} fill="none" strokeWidth={stressed ? 1.4 : 3} />
+      <path d="M560 270 V400 H760" stroke="#d4656a" fill="none" strokeWidth="2" />
+      <Dot path="M150 270 H310" color="#d4656a" dur="2.4s" />
+      <Dot path="M406 270 H620" color="#d4656a" dur="2.6s" begin="0.2s" />
+      <Dot path="M620 270 H760" color={stressed ? "#e08a55" : "#d4656a"} dur="3s" />
+      <rect x="690" y="80" width="36" height="150" fill="none" stroke="#e6d3a4" />
       <rect x="694" y={store} width="28" height={fill} fill="rgba(228,210,168,0.85)" />
       <text x="690" y="250" className="draw-note">storage</text>
       <text x="760" y="258" className="draw-note">cooling load</text>
@@ -74,7 +74,7 @@ function BrainScene({ result, local }) {
   const hot = local.temperature >= 65;
   const thirsty = result.waterGap >= 35;
   const loaded = result.coolingDemand >= 48 || result.shortage >= 12;
-  const active = (on) => (on ? "#e4d2a8" : "rgba(243,239,230,0.28)");
+  const active = (on) => (on ? "#e6d3a4" : "rgba(239,232,220,0.28)");
   return (
     <svg className="drawing" viewBox="0 0 860 520" role="img" aria-label="A decision network. Signals move from conditions to a response.">
       <text x="40" y="48" className="draw-kicker">Engineering mechanism</text>
@@ -88,21 +88,21 @@ function BrainScene({ result, local }) {
           <circle cx={x} cy={y} r="22" fill="none" stroke={active(on)} />
           <text x={x - 18} y={y + 48} className="draw-note">{label}</text>
           <path d={`M${x + 24} ${y} H300`} stroke={active(on)} fill="none" />
-          {on && <Dot path={`M${x + 24} ${y} H300`} color="#e4d2a8" dur="2.2s" />}
+          {on && <Dot path={`M${x + 24} ${y} H300`} color="#e6d3a4" dur="2.2s" />}
         </g>
       ))}
-      <circle cx="390" cy="270" r="54" fill="none" stroke="#e4d2a8" strokeWidth="1.5" />
+      <circle cx="390" cy="270" r="54" fill="none" stroke="#e6d3a4" strokeWidth="1.5" />
       <text x="358" y="274" className="draw-note">decide</text>
-      <path d="M444 270 H620" stroke="#e4d2a8" fill="none" />
-      <Dot path="M444 270 H620" color="#e4d2a8" dur="2s" begin="0.6s" />
+      <path d="M444 270 H620" stroke="#e6d3a4" fill="none" />
+      <Dot path="M444 270 H620" color="#e6d3a4" dur="2s" begin="0.6s" />
       <path d="M620 270 V160 H740" stroke={active(hot || loaded)} fill="none" />
       <path d="M620 270 H760" stroke={active(thirsty)} fill="none" />
       <path d="M620 270 V390 H740" stroke={active(loaded)} fill="none" />
       <text x="740" y="150" className="draw-note">cooling</text>
       <text x="760" y="258" className="draw-note">water</text>
       <text x="740" y="412" className="draw-note">allocation</text>
-      {(hot || loaded) && <Dot path="M620 270 V160 H740" color="#d4894a" dur="2.8s" />}
-      {thirsty && <Dot path="M620 270 H760" color="#7ec8d6" dur="2.8s" />}
+      {(hot || loaded) && <Dot path="M620 270 V160 H740" color="#e08a55" dur="2.8s" />}
+      {thirsty && <Dot path="M620 270 H760" color="#cfc8bc" dur="2.8s" />}
     </svg>
   );
 }
@@ -120,7 +120,7 @@ function LungScene({ result, local }) {
         return <path key={y} d={d} stroke="rgba(126,200,214,0.45)" fill="none" />;
       })}
       {Array.from({ length: passing }, (_, index) => (
-        <Dot key={index} path={`M60 ${150 + (index % 7) * 42} Q 430 ${122 + (index % 7) * 42} 800 ${150 + (index % 7) * 42}`} color="#7ec8d6" dur={`${3.2 + index * 0.3}s`} begin={`${index * 0.4}s`} />
+        <Dot key={index} path={`M60 ${150 + (index % 7) * 42} Q 430 ${122 + (index % 7) * 42} 800 ${150 + (index % 7) * 42}`} color="#cfc8bc" dur={`${3.2 + index * 0.3}s`} begin={`${index * 0.4}s`} />
       ))}
       {Array.from({ length: stalled }, (_, index) => (
         <circle key={index} cx={180 + index * 70} cy={210 + (index % 3) * 40} r="5" fill="rgba(212,137,74,0.8)" />
@@ -136,10 +136,10 @@ function LiverScene({ result, local }) {
     <svg className="drawing" viewBox="0 0 860 520" role="img" aria-label="A material loop: separate, transform, recover, and a remainder that leaves.">
       <text x="40" y="48" className="draw-kicker">Engineering mechanism</text>
       <text x="40" y="88" className="draw-title">Separate. Transform. Recover. Reuse.</text>
-      <ellipse cx="390" cy="290" rx="180" ry="110" fill="none" stroke="#7d9a72" strokeWidth="2" />
-      <Dot path="M390 180 A180 110 0 1 1 389 180" color="#7d9a72" dur="7s" />
-      <Dot path="M390 180 A180 110 0 1 1 389 180" color="#e4d2a8" dur="7s" begin="2s" />
-      <path d="M570 290 H800" stroke="rgba(243,239,230,0.35)" fill="none" strokeWidth={2 + leave} />
+      <ellipse cx="390" cy="290" rx="180" ry="110" fill="none" stroke="#c6a56a" strokeWidth="2" />
+      <Dot path="M390 180 A180 110 0 1 1 389 180" color="#c6a56a" dur="7s" />
+      <Dot path="M390 180 A180 110 0 1 1 389 180" color="#e6d3a4" dur="7s" begin="2s" />
+      <path d="M570 290 H800" stroke="rgba(239,232,220,0.35)" fill="none" strokeWidth={2 + leave} />
       <text x="250" y="168" className="draw-note">separate</text>
       <text x="470" y="200" className="draw-note">transform</text>
       <text x="250" y="430" className="draw-note">recover</text>
@@ -162,13 +162,13 @@ function SkinScene({ result, local }) {
     <svg className="drawing" viewBox="0 0 860 540" role="img" aria-label="A building with an outer layer that closes as sun and heat rise.">
       <text x="40" y="42" className="draw-kicker">Engineering mechanism</text>
       <text x="40" y="78" className="draw-title">The outer layer changes. The heat admitted changes with it.</text>
-      <circle cx={sunX} cy={sunY} r={16 + local.sun / 10} fill="#e4d2a8" opacity={day ? 0.9 : 0.2} />
-      <rect x="300" y="120" width="200" height="340" fill="#12141a" stroke="rgba(243,239,230,0.4)" />
+      <circle cx={sunX} cy={sunY} r={16 + local.sun / 10} fill="#e6d3a4" opacity={day ? 0.9 : 0.2} />
+      <rect x="300" y="120" width="200" height="340" fill="#101218" stroke="rgba(239,232,220,0.4)" />
       <rect x="300" y="120" width="200" height="340" fill={`rgba(212,137,74,${result.heatLoad / 160})`} />
       {Array.from({ length: 15 }, (_, index) => {
         const y = 132 + index * 21;
         return (
-          <rect key={y} x="500" y={y} width="150" height="7" fill="#e7e1d6" transform={`rotate(${angle} 500 ${y + 3})`} />
+          <rect key={y} x="500" y={y} width="150" height="7" fill="#efe8dc" transform={`rotate(${angle} 500 ${y + 3})`} />
         );
       })}
       <text x="300" y="490" className="draw-note">Heat load {result.heatLoad} · cooling demand {result.coolingDemand}</text>
@@ -182,12 +182,12 @@ function DigestiveScene({ result }) {
     <svg className="drawing" viewBox="0 0 860 520" role="img" aria-label="Input is processed, useful material returns, a remainder leaves.">
       <text x="40" y="48" className="draw-kicker">Engineering mechanism</text>
       <text x="40" y="88" className="draw-title">Take it in. Absorb what can return. Let the rest leave.</text>
-      <path d="M120 160 V400" stroke="#7d9a72" fill="none" strokeWidth="8" />
-      <path d="M120 400 H420 V200 H120" stroke="#e4d2a8" fill="none" strokeWidth="3" />
-      <path d="M120 400 H700" stroke="rgba(243,239,230,0.3)" fill="none" strokeWidth="4" />
-      <Dot path="M120 160 V400" color="#7d9a72" dur="3.5s" />
-      <Dot path="M120 400 H420 V200 H120" color="#e4d2a8" dur="6s" />
-      <Dot path="M120 400 H700" color="rgba(243,239,230,0.7)" dur="4s" begin="0.5s" />
+      <path d="M120 160 V400" stroke="#c6a56a" fill="none" strokeWidth="8" />
+      <path d="M120 400 H420 V200 H120" stroke="#e6d3a4" fill="none" strokeWidth="3" />
+      <path d="M120 400 H700" stroke="rgba(239,232,220,0.3)" fill="none" strokeWidth="4" />
+      <Dot path="M120 160 V400" color="#c6a56a" dur="3.5s" />
+      <Dot path="M120 400 H420 V200 H120" color="#e6d3a4" dur="6s" />
+      <Dot path="M120 400 H700" color="rgba(239,232,220,0.7)" dur="4s" begin="0.5s" />
       <text x="140" y="180" className="draw-note">input</text>
       <text x="250" y="188" className="draw-note">returns to use</text>
       <text x="520" y="386" className="draw-note">remainder</text>
@@ -200,10 +200,10 @@ function BloodScene({ result, local }) {
   const on = local.systems.blood;
   const pace = result.shortage > 28 ? "5.2s" : "2.8s";
   const streams = [
-    ["water", "#7ec8d6", 168],
-    ["energy", "#c4525a", 228],
-    ["materials", "#e4d2a8", 288],
-    ["signals", "rgba(243,239,230,0.8)", 348],
+    ["water", "#cfc8bc", 168],
+    ["energy", "#d4656a", 228],
+    ["materials", "#e6d3a4", 288],
+    ["signals", "rgba(239,232,220,0.8)", 348],
   ];
   return (
     <svg className="drawing" viewBox="0 0 860 520" role="img" aria-label="Resource circulation. Separate streams join and move toward demand.">
@@ -216,7 +216,7 @@ function BloodScene({ result, local }) {
           {on && <Dot path={`M40 ${y} H250 C340 ${y} 360 250 470 250 H820`} color={color} dur={pace} />}
         </g>
       ))}
-      <circle cx="470" cy="250" r="28" fill="none" stroke="#c4525a" />
+      <circle cx="470" cy="250" r="28" fill="none" stroke="#d4656a" />
       <text x="40" y="450" className="draw-note">Circulation in the model {result.flow}. Shortage still showing {result.shortage}. Neither figure is a measured national flow.</text>
     </svg>
   );
@@ -224,7 +224,7 @@ function BloodScene({ result, local }) {
 
 function SkeletonScene({ result, local }) {
   const shared = local.systems.skeleton;
-  const hot = result.structuralStress > 68 ? "#d4894a" : result.structuralStress > 42 ? "#e4d2a8" : "#f3efe6";
+  const hot = result.structuralStress > 68 ? "#e08a55" : result.structuralStress > 42 ? "#e6d3a4" : "#efe8dc";
   return (
     <svg className="drawing" viewBox="0 0 860 520" role="img" aria-label="A structure under load. Sharing the load changes where the stress sits.">
       <text x="40" y="48" className="draw-kicker">Engineering mechanism</text>
@@ -279,9 +279,9 @@ export function Slider({ field, value, onChange }) {
 export function Plinth({ organ }) {
   return (
     <svg className="drawing plinth" viewBox="0 0 640 420" role="img" aria-label={`Planned physical model for ${organ.invention}.`}>
-      <rect x="70" y="300" width="500" height="18" fill="#1a1c22" />
-      <rect x="110" y="318" width="18" height="70" fill="#23262e" />
-      <rect x="512" y="318" width="18" height="70" fill="#23262e" />
+      <rect x="70" y="300" width="500" height="18" fill="#1a1d24" />
+      <rect x="110" y="318" width="18" height="70" fill="#3e3a34" />
+      <rect x="512" y="318" width="18" height="70" fill="#3e3a34" />
       <g stroke={`var(--${organ.accent})`} fill="none" strokeWidth="2">
         {organ.id === "skin" && <path d="M180 260 H460 M200 150 V260 M420 150 V260 M200 150 H420 M230 170 H390 M230 200 H390 M230 230 H390" />}
         {organ.id === "heart" && <path d="M160 200 H300 M300 120 V280 M300 160 H470 M300 230 H430" />}

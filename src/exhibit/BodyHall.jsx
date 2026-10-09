@@ -143,7 +143,7 @@ export default function BodyHall() {
       <header className="hul-sign">
         <p>The body already keeps heat, water and waste in balance. We study those methods, and build them for Oman.</p>
         <div>
-          <h1>The Human Body: Nature’s Innovation Lab</h1>
+          <h1>The Human Body<span>Nature’s Innovation Lab</span></h1>
           <p className="hul-sub">A living system, carried into 2040.</p>
         </div>
         <ol>

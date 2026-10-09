@@ -55,7 +55,7 @@ export function Header({ variant = "home" }) {
             ))}
           </nav>
         ) : (
-          <span className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-mist md:inline">Live simulation · You are the brain</span>
+          <span className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-mist md:inline">Decision game · You are the brain</span>
         )}
         {variant === "home" ? (
           <span className="flex items-center gap-3">

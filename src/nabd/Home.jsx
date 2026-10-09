@@ -253,8 +253,12 @@ export default function Home() {
 
   return (
     <div className="grain overflow-x-clip">
+      <div className={`nabd-first${selected ? " is-open" : ""}`}>
       <Header />
-      <section id="organs" className="nabd-install">
+      <section id="organs" className="nabd-install nabd-enter">
+        <h1 className="nabd-hero-title font-display font-light uppercase">
+          What if Oman 2040 could <em className="nabd-shine font-normal text-bio">think</em>, <em className="nabd-shine font-normal text-sand">adapt</em> and <em className="nabd-shine font-normal text-bone">heal</em> like a human body?
+        </h1>
         <div className="nabd-install-body">
           <Body organs={previewOrgans(health)} health={health} selected={selected} onSelect={setSelected} className="h-auto w-full" />
           <div className="mx-auto mt-3 max-w-sm">
@@ -276,7 +280,8 @@ export default function Home() {
         </div>
         <div className="nabd-organ-list" role="list">
           {ORGANS.map((item) => (
-            <button key={item.id} type="button" role="listitem" aria-pressed={selected === item.id} onClick={() => setSelected(item.id)}>
+            <button key={item.id} type="button" role="listitem" data-organ={item.id} aria-pressed={selected === item.id} onClick={() => setSelected(item.id)}>
+              {(item.id === "heart" || item.id === "skin") && <i className="nabd-cue" aria-hidden="true" />}
               {item.name.replace("The ", "")}
             </button>
           ))}
@@ -309,27 +314,28 @@ export default function Home() {
               </details>
             </article>
           ) : (
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.28em] text-sand">A biomimetic sustainability system · Oman Vision 2040</p>
-              <p className="mt-5 font-display text-3xl font-light text-sand md:text-4xl">Humanity: The Living Planet</p>
-              <h1 className="mt-3 font-display text-[clamp(2.3rem,4.6vw,4.4rem)] font-light leading-[0.95]">
-                What if Oman 2040 could <em className="nabd-shine font-normal text-bio">think</em>, <em className="nabd-shine font-normal text-sand">adapt</em> and <em className="nabd-shine font-normal text-bone">heal</em> like a human body?
-              </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-mist">
-                Nabd — Arabic for <span className="text-bone">pulse</span> — is a self-regulating resource system for water, energy and waste. Press an organ. The technology it inspired opens here.
-              </p>
-              <p className="mt-3 max-w-xl leading-relaxed text-mist">Surviving is the minimum. The aim is to keep developing — with comfort, innovation and prosperity — while harm to any generation is not part of the plan.</p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a href={sitePath("/experience")} className="rounded-full bg-bio px-6 py-3 font-semibold text-ink">Play — become the brain</a>
-                <a href={sitePath("/body")} className="rounded-full border border-line px-6 py-3 text-bone hover:border-bone">The Human Body</a>
-                <a href="#concept" className="rounded-full border border-line px-6 py-3 text-mist hover:border-bone hover:text-bone">How it works</a>
+            <div className="nabd-hero-copy">
+              <div className="nabd-hero-lead">
+                <p className="font-mono text-xs uppercase tracking-[0.28em] text-sand">A biomimetic sustainability system · Oman Vision 2040</p>
+                <p className="text-lg leading-relaxed text-mist">
+                  Nabd — Arabic for <span className="text-bone">pulse</span> — is a self-regulating resource system for water, energy and waste. Press an organ. The technology it inspired opens here.
+                </p>
+                <p className="text-lg leading-relaxed text-mist">Surviving is the minimum. The aim is to keep developing — with comfort, innovation and prosperity — while harm to any generation is not part of the plan.</p>
+              </div>
+              <div className="nabd-hero-close">
+                <div className="flex flex-wrap gap-3">
+                  <a href={sitePath("/experience")} className="rounded-full bg-bio px-6 py-3 font-semibold text-ink">Play — become the brain</a>
+                  <a href={sitePath("/body")} className="rounded-full border border-line px-6 py-3 text-bone hover:border-bone">The Human Body</a>
+                  <a href="#concept" className="rounded-full border border-line px-6 py-3 text-mist hover:border-bone hover:text-bone">How it works</a>
+                </div>
               </div>
             </div>
           )}
         </div>
       </section>
+      </div>
 
-      <section id="concept" className="border-y border-line/60 bg-ink-2/50">
+      <section id="concept" className="nabd-reveal border-y border-line/60 bg-ink-2/50">
         <div className="mx-auto max-w-7xl px-5 py-24">
           <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
             <div>
@@ -362,10 +368,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="connected" className="border-y border-line/60 bg-ink-2/50">
+      <section id="connected" className="nabd-reveal border-y border-line/60 bg-ink-2/50">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 lg:grid-cols-[1fr_minmax(0,320px)]">
           <div>
-            <Kicker>03 · Everything is connected</Kicker>
+            <Kicker>02 · Everything is connected</Kicker>
             <h2 className="mt-4 font-display text-4xl font-light leading-tight md:text-5xl">Sustainability problems are interconnected — so the solutions must be too.</h2>
             <ol className="mt-10 space-y-2">
               {CHAIN.map((item, index) => (
@@ -401,8 +407,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="health" className="mx-auto max-w-7xl px-5 py-24">
-        <Kicker>04 · System health, not a quiz score</Kicker>
+      <section id="health" className="nabd-reveal mx-auto max-w-7xl px-5 py-24">
+        <Kicker>03 · System health, not a quiz score</Kicker>
         <h2 className="mt-4 max-w-3xl font-display text-4xl font-light leading-tight md:text-5xl">Visitors don’t get told a choice was bad. They watch the body struggle.</h2>
         <div className="mt-12 grid gap-6 md:grid-cols-2">
           <HealthCards title="Good decisions" items={[...STAGES.slice(0, 4)].reverse()} accent="text-bio" note="Lights brighten, flows quicken, the ground turns green." picked={picked} onPick={setPicked} />
@@ -417,11 +423,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-y border-line/60">
+      <section className="nabd-reveal relative overflow-hidden border-y border-line/60">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(700px_400px_at_80%_50%,rgba(240,106,75,0.12),transparent_70%)]" />
         <div className="relative mx-auto grid max-w-7xl gap-12 px-5 py-24 lg:grid-cols-2">
           <div>
-            <Kicker>05 · Green skills as the control interface</Kicker>
+            <Kicker>04 · Green skills as the control interface</Kicker>
             <h2 className="mt-4 font-display text-4xl font-light leading-tight md:text-5xl">The visitor becomes the brain.</h2>
             <p className="mt-6 text-mist">Each visitor receives a realistic Oman 2040 challenge and a limited budget. Every strategy card helps somewhere and costs something elsewhere. There is no perfect single solution — only connected ones.</p>
             <div className="mt-8 rounded-2xl border border-line bg-ink-2/70 p-6 font-mono text-sm">
@@ -452,8 +458,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="vision" className="mx-auto max-w-7xl px-5 py-24">
-        <Kicker>06 · Oman Vision 2040</Kicker>
+      <section id="vision" className="nabd-reveal mx-auto max-w-7xl px-5 py-24">
+        <Kicker>05 · Oman Vision 2040</Kicker>
         <h2 className="mt-4 max-w-4xl font-display text-4xl font-light leading-tight md:text-5xl">How can Oman design systems that stay resilient as environmental and resource challenges change toward 2040 and beyond?</h2>
         <p className="mt-4 text-mist">Nabd is our proposed biomimetic answer.</p>
         <div className="mt-12 grid gap-px overflow-hidden rounded-3xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
@@ -467,14 +473,14 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-y border-line/60 bg-ink-2/50">
+      <section className="nabd-reveal border-y border-line/60 bg-ink-2/50">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 lg:grid-cols-2">
           <figure className="overflow-hidden rounded-3xl border border-line">
             <img src={`${import.meta.env.BASE_URL}img/vision-lab.jpg`} alt="The Human Body: Nature's Innovation Lab, with organ specimens arranged around a glass body." loading="lazy" width="1024" height="682" className="h-auto w-full" />
             <figcaption className="bg-ink-3 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">The Human Body: Nature's Innovation Lab</figcaption>
           </figure>
           <div>
-            <Kicker>07 · From model to invention</Kicker>
+            <Kicker>06 · From model to invention</Kicker>
             <h2 className="mt-4 font-display text-4xl font-light leading-tight">We stopped making a model of the planet, and started designing a system.</h2>
             <div className="mt-8 space-y-4">
               <div className="rounded-2xl border border-line p-5">
@@ -494,7 +500,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-5 py-28 text-center">
+      <section className="nabd-reveal mx-auto max-w-5xl px-5 py-28 text-center">
         <blockquote className="font-display text-2xl font-light leading-relaxed text-mist md:text-3xl">
           “Nature has already solved many problems that humanity is still trying to solve. Instead of simply studying the body, we can learn from <span className="text-bone">how it works</span> and use those principles to design a more resilient future for Oman.”
         </blockquote>
