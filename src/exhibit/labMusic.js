@@ -60,40 +60,42 @@ function voice(ctx, dest, freq, start, duration, level, options) {
   });
 }
 
-function strings(ctx, dest, freq, start, duration, level) {
+function strings(ctx, dest, freq, start, duration, level, light) {
   voice(ctx, dest, freq, start, duration, level, {
-    attack: 0.22,
-    release: 0.55,
+    attack: light ? 0.06 : 0.22,
+    release: light ? 0.35 : 0.55,
     vibrato: 4.6,
-    depth: 0.004,
-    partials: [[1, 1], [2, 0.42], [3, 0.16], [4, 0.06]],
-    spread: [-8, 0, 8],
+    depth: light ? 0.005 : 0.004,
+    partials: light ? [[1, 1], [2, 0.4]] : [[1, 1], [2, 0.42], [3, 0.16], [4, 0.06]],
+    spread: light ? [0] : [-8, 0, 8],
   });
 }
 
-function violin(ctx, dest, freq, start, duration, level) {
+function violin(ctx, dest, freq, start, duration, level, light) {
   voice(ctx, dest, freq, start, duration, level, {
-    attack: 0.05,
+    attack: 0.04,
     release: 0.28,
     vibrato: 5.3,
-    depth: 0.007,
-    partials: [[1, 1], [2, 0.55], [3, 0.22], [4, 0.08], [5, 0.03]],
-    spread: [-5, 0, 5],
+    depth: light ? 0.008 : 0.007,
+    partials: light ? [[1, 1], [2, 0.48], [3, 0.16]] : [[1, 1], [2, 0.55], [3, 0.22], [4, 0.08], [5, 0.03]],
+    spread: light ? [0] : [-5, 0, 5],
   });
 }
 
-function pluck(ctx, dest, freq, start, level) {
+function pluck(ctx, dest, freq, start, level, light) {
   const bus = ctx.createGain();
   bus.gain.setValueAtTime(0.0001, start);
   bus.gain.exponentialRampToValueAtTime(level, start + 0.012);
   bus.gain.exponentialRampToValueAtTime(0.0001, start + 1.25);
   bus.connect(dest);
-  [1, 2, 3].forEach((partial, index) => {
+  const partials = light ? [1, 2] : [1, 2, 3];
+  const weights = light ? [1, 0.35] : [1, 0.4, 0.14];
+  partials.forEach((partial, index) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
     osc.frequency.value = freq * partial;
-    gain.gain.value = [1, 0.4, 0.14][index];
+    gain.gain.value = weights[index];
     osc.connect(gain);
     gain.connect(bus);
     osc.start(start);
@@ -101,11 +103,12 @@ function pluck(ctx, dest, freq, start, level) {
   });
 }
 
-function hall(ctx) {
+function hall(ctx, light) {
   const input = ctx.createGain();
   const wet = ctx.createGain();
-  wet.gain.value = 0.42;
-  [0.029, 0.041, 0.059, 0.083, 0.113].forEach((time, index) => {
+  wet.gain.value = light ? 0.22 : 0.42;
+  const times = light ? [0.047, 0.083] : [0.029, 0.041, 0.059, 0.083, 0.113];
+  times.forEach((time, index) => {
     const delay = ctx.createDelay(0.2);
     const feedback = ctx.createGain();
     const tone = ctx.createBiquadFilter();
@@ -124,60 +127,85 @@ function hall(ctx) {
 
 export function startLabMusic() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
-  const ctx = new AudioContext();
+  let ctx;
+  try {
+    ctx = new AudioContext({ latencyHint: "interactive" });
+  } catch {
+    ctx = new AudioContext();
+  }
+  const phone = window.matchMedia("(max-width: 760px)").matches;
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = "playback";
+  } catch {
+    // Older browsers have no audio session control.
+  }
+  try {
+    const unlock = ctx.createBufferSource();
+    unlock.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    unlock.connect(ctx.destination);
+    unlock.start();
+  } catch {
+    // The tap itself is what unlocks audio on a phone.
+  }
+  const resumePromise = ctx.resume();
+
   const stringsBus = ctx.createGain();
   const melodyBus = ctx.createGain();
   const harpBus = ctx.createGain();
   const mix = ctx.createGain();
   const stringsTone = ctx.createBiquadFilter();
   const melodyTone = ctx.createBiquadFilter();
-  const comp = ctx.createDynamicsCompressor();
   const master = ctx.createGain();
-  const room = hall(ctx);
+  const room = hall(ctx, phone);
 
   stringsTone.type = "lowpass";
-  stringsTone.frequency.value = 2800;
+  stringsTone.frequency.value = phone ? 4200 : 2800;
   melodyTone.type = "lowpass";
-  melodyTone.frequency.value = 5200;
+  melodyTone.frequency.value = phone ? 6400 : 5200;
   stringsBus.connect(stringsTone);
   melodyBus.connect(melodyTone);
   stringsTone.connect(mix);
   melodyTone.connect(mix);
   harpBus.connect(mix);
   mix.connect(room.input);
-  mix.connect(comp);
-  room.wet.connect(comp);
-  comp.threshold.value = -16;
-  comp.knee.value = 18;
-  comp.ratio.value = 2.2;
-  comp.attack.value = 0.012;
-  comp.release.value = 0.28;
   master.gain.value = 0;
-  comp.connect(master);
   master.connect(ctx.destination);
 
-  const opened = ctx.currentTime;
-  master.gain.linearRampToValueAtTime(0.3, opened + 0.22);
+  if (phone) {
+    mix.connect(master);
+    room.wet.connect(master);
+  } else {
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16;
+    comp.knee.value = 18;
+    comp.ratio.value = 2.2;
+    comp.attack.value = 0.012;
+    comp.release.value = 0.28;
+    mix.connect(comp);
+    room.wet.connect(comp);
+    comp.connect(master);
+  }
 
-  let when = opened + 0.04;
+  let when = 0;
   let index = 0;
   let stopped = false;
+  let started = false;
   let timer = 0;
 
   function schedule(bar, step, time) {
     if (step === 0) {
       const held = BEAT * 4.2;
-      bar.chord.forEach((note) => strings(ctx, stringsBus, hz(note), time, held, 0.11));
-      strings(ctx, stringsBus, hz(bar.bass), time, held, 0.07);
-      strings(ctx, stringsBus, hz(bar.bass + 12), time, held, 0.12);
+      bar.chord.forEach((note) => strings(ctx, stringsBus, hz(note), time, held, phone ? 0.16 : 0.11, phone));
+      strings(ctx, stringsBus, hz(bar.bass + 12), time, held, phone ? 0.2 : 0.12, phone);
+      if (!phone) strings(ctx, stringsBus, hz(bar.bass), time, held, 0.07, false);
     }
     const note = bar.melody[step];
-    violin(ctx, melodyBus, hz(note), time, BEAT * 1.12, 0.28);
-    violin(ctx, melodyBus, hz(thirdBelow(note)), time, BEAT * 1.12, 0.12);
-    violin(ctx, melodyBus, hz(note + 12), time, BEAT * 0.96, 0.045);
+    violin(ctx, melodyBus, hz(note), time, BEAT * 1.12, phone ? 0.36 : 0.28, phone);
+    violin(ctx, melodyBus, hz(thirdBelow(note)), time, BEAT * 1.12, phone ? 0.16 : 0.12, phone);
+    if (!phone) violin(ctx, melodyBus, hz(note + 12), time, BEAT * 0.96, 0.045, false);
     const harpNotes = [...bar.chord, ...[...bar.chord].reverse()];
-    pluck(ctx, harpBus, hz(harpNotes[step * 2] + 12), time, 0.09);
-    pluck(ctx, harpBus, hz(harpNotes[step * 2 + 1] + 12), time + BEAT * 0.5, 0.07);
+    pluck(ctx, harpBus, hz(harpNotes[step * 2] + 12), time, phone ? 0.14 : 0.09, phone);
+    pluck(ctx, harpBus, hz(harpNotes[step * 2 + 1] + 12), time + BEAT * 0.5, phone ? 0.1 : 0.07, phone);
   }
 
   function pump() {
@@ -189,11 +217,22 @@ export function startLabMusic() {
       when += BEAT;
       index += 1;
     }
-    timer = window.setTimeout(pump, 180);
+    timer = window.setTimeout(pump, phone ? 240 : 180);
   }
 
-  pump();
-  ctx.resume();
+  function begin() {
+    if (started || stopped || ctx.state !== "running") return;
+    started = true;
+    const now = ctx.currentTime;
+    when = now + 0.05;
+    master.gain.cancelScheduledValues(now);
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(phone ? 0.5 : 0.3, now + (phone ? 0.12 : 0.22));
+    pump();
+  }
+
+  resumePromise.then(begin);
+  window.setTimeout(begin, 280);
 
   return () => {
     if (stopped) return;
@@ -201,8 +240,8 @@ export function startLabMusic() {
     window.clearTimeout(timer);
     const time = ctx.currentTime;
     master.gain.cancelScheduledValues(time);
-    master.gain.setValueAtTime(master.gain.value, time);
-    master.gain.linearRampToValueAtTime(0, time + 0.7);
-    window.setTimeout(() => ctx.close(), 800);
+    master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), time);
+    master.gain.linearRampToValueAtTime(0, time + 0.45);
+    window.setTimeout(() => ctx.close(), 560);
   };
 }

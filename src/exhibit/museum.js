@@ -386,24 +386,27 @@ function glassShell(strength, tint = [0.96, 0.91, 0.78], veil = 0) {
   });
 }
 
-function makeStation(figure, texture, spot, shadowMap) {
+function makeStation(figure, texture, spot, shadowMap, phone) {
   const group = new THREE.Group();
   group.position.set(spot.x, 0, spot.z);
   group.rotation.y = 0;
+  const sides = phone ? 20 : 64;
 
-  const black = new THREE.MeshPhysicalMaterial({
-    color: 0x101218,
-    metalness: 0.22,
-    roughness: 0.38,
-    clearcoat: 0.65,
-    clearcoatRoughness: 0.28,
-  });
-  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.42, 0.08, 64), black);
+  const black = phone
+    ? new THREE.MeshStandardMaterial({ color: 0x101218, metalness: 0.16, roughness: 0.46 })
+    : new THREE.MeshPhysicalMaterial({
+      color: 0x101218,
+      metalness: 0.22,
+      roughness: 0.38,
+      clearcoat: 0.65,
+      clearcoatRoughness: 0.28,
+    });
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.42, 0.08, sides), black);
   foot.position.y = 0.04;
   foot.castShadow = true;
   foot.receiveShadow = true;
   group.add(foot);
-  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.56, 64), black);
+  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.56, sides), black);
   plinth.position.y = 0.36;
   plinth.castShadow = true;
   plinth.receiveShadow = true;
@@ -416,7 +419,7 @@ function makeStation(figure, texture, spot, shadowMap) {
   const shellHeight = organHeight + 0.36;
 
   const glass = new THREE.Mesh(
-    new THREE.CylinderGeometry(shellRadius, shellRadius, shellHeight, 64, 1, true),
+    new THREE.CylinderGeometry(shellRadius, shellRadius, shellHeight, sides, 1, true),
     glassShell(0.38, [0.94, 0.88, 0.74], 0.006),
   );
   glass.position.set(0, shellBase + shellHeight / 2, 0);
@@ -424,9 +427,11 @@ function makeStation(figure, texture, spot, shadowMap) {
   glass.raycast = () => {};
   group.add(glass);
 
-  const stationLamp = new THREE.PointLight(0xe6d3a4, 0.28, 1.6, 2);
-  stationLamp.position.set(0, shellBase + 0.12, 0.22);
-  group.add(stationLamp);
+  if (!phone) {
+    const stationLamp = new THREE.PointLight(0xe6d3a4, 0.28, 1.6, 2);
+    stationLamp.position.set(0, shellBase + 0.12, 0.22);
+    group.add(stationLamp);
+  }
 
   const organ = new THREE.Mesh(curvedPlane(organWidth, organHeight, 0.028), specimenMaterial(texture));
   organ.position.set(0, 0.68 + organHeight / 2, 0.02);
@@ -440,7 +445,9 @@ function makeStation(figure, texture, spot, shadowMap) {
   placard.position.set(boardX, 0.02, 0.42);
   const backing = new THREE.Mesh(
     new THREE.BoxGeometry(boardWidth + 0.03, boardHeight + 0.03, 0.03),
-    new THREE.MeshPhysicalMaterial({ color: 0x10161a, metalness: 0.2, roughness: 0.45, clearcoat: 0.3 }),
+    phone
+      ? new THREE.MeshStandardMaterial({ color: 0x10161a, metalness: 0.16, roughness: 0.5 })
+      : new THREE.MeshPhysicalMaterial({ color: 0x10161a, metalness: 0.2, roughness: 0.45, clearcoat: 0.3 }),
   );
   backing.position.set(0, boardHeight / 2, -0.02);
   placard.add(backing);
@@ -456,7 +463,7 @@ function makeStation(figure, texture, spot, shadowMap) {
   placard.lookAt(0, 1.45, CAM_Z);
 
   const shadow = new THREE.Mesh(
-    new THREE.CircleGeometry(0.46, 32),
+    new THREE.CircleGeometry(0.46, phone ? 12 : 32),
     new THREE.MeshBasicMaterial({ map: shadowMap, transparent: true, depthWrite: false }),
   );
   shadow.rotation.x = -Math.PI / 2;
@@ -475,13 +482,14 @@ function makeStation(figure, texture, spot, shadowMap) {
 
 export function mountMuseum(canvas, { figures, onPick }) {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  const phone = window.matchMedia("(max-width: 760px), (pointer: coarse) and (max-width: 1024px)").matches;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !phone, powerPreference: phone ? "low-power" : "high-performance" });
+  renderer.setPixelRatio(phone ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setClearColor(0x07080c, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.06;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !phone;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
@@ -493,21 +501,26 @@ export function mountMuseum(canvas, { figures, onPick }) {
   let lookY = 0.58;
   let portrait = false;
 
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.46;
+  let pmrem = null;
+  if (!phone) {
+    pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.46;
+  }
 
   const floor = new THREE.Mesh(
-    new THREE.CircleGeometry(12, 96),
-    new THREE.MeshPhysicalMaterial({
-      map: galleryFloor(),
-      color: 0xd4c8b6,
-      metalness: 0.16,
-      roughness: 0.62,
-      clearcoat: 0.28,
-      clearcoatRoughness: 0.4,
-      envMapIntensity: 0.32,
-    }),
+    new THREE.CircleGeometry(12, phone ? 36 : 96),
+    phone
+      ? new THREE.MeshStandardMaterial({ map: galleryFloor(), color: 0xd4c8b6, metalness: 0.08, roughness: 0.72 })
+      : new THREE.MeshPhysicalMaterial({
+        map: galleryFloor(),
+        color: 0xd4c8b6,
+        metalness: 0.16,
+        roughness: 0.62,
+        clearcoat: 0.28,
+        clearcoatRoughness: 0.4,
+        envMapIntensity: 0.32,
+      }),
   );
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
@@ -522,7 +535,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
   scene.add(inlay);
 
   const wall = new THREE.Mesh(
-    new THREE.CylinderGeometry(13, 13, 8.2, 80, 1, true, Math.PI * 0.35, Math.PI * 1.3),
+    new THREE.CylinderGeometry(13, 13, 8.2, phone ? 28 : 80, 1, true, Math.PI * 0.35, Math.PI * 1.3),
     new THREE.MeshStandardMaterial({ map: roomWall(), color: 0xffffff, roughness: 0.92, metalness: 0.04, side: THREE.BackSide }),
   );
   wall.position.y = 3.1;
@@ -531,8 +544,8 @@ export function mountMuseum(canvas, { figures, onPick }) {
 
   const key = new THREE.DirectionalLight(0xfff1dc, 2.15);
   key.position.set(3.8, 6.4, 5.2);
-  key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.castShadow = !phone;
+  if (!phone) key.shadow.mapSize.set(2048, 2048);
   key.shadow.camera.near = 0.5;
   key.shadow.camera.far = 22;
   key.shadow.camera.left = -7;
@@ -542,32 +555,34 @@ export function mountMuseum(canvas, { figures, onPick }) {
   key.shadow.bias = -0.0004;
   key.shadow.normalBias = 0.02;
   scene.add(key);
-  scene.add(new THREE.HemisphereLight(0xe6d3a4, 0x16130f, 0.22));
-  const fill = new THREE.DirectionalLight(0xcfc8bc, 0.38);
+  scene.add(new THREE.HemisphereLight(0xe6d3a4, 0x16130f, phone ? 0.46 : 0.22));
+  const fill = new THREE.DirectionalLight(0xcfc8bc, phone ? 0.62 : 0.38);
   fill.position.set(-4.8, 3.8, 3.4);
   scene.add(fill);
   const lamp = new THREE.PointLight(0xe6d3a4, 0.55, 2.6, 2);
   lamp.position.set(0, 0.42, 0.55);
   scene.add(lamp);
 
-  const stone = new THREE.MeshPhysicalMaterial({
-    color: 0x101218,
-    metalness: 0.18,
-    roughness: 0.32,
-    clearcoat: 0.72,
-    clearcoatRoughness: 0.2,
-  });
+  const stone = phone
+    ? new THREE.MeshStandardMaterial({ color: 0x101218, metalness: 0.14, roughness: 0.4 })
+    : new THREE.MeshPhysicalMaterial({
+      color: 0x101218,
+      metalness: 0.18,
+      roughness: 0.32,
+      clearcoat: 0.72,
+      clearcoatRoughness: 0.2,
+    });
   const columnRadius = 0.66;
   const columnBase = 0.24;
   const columnHeight = 2.22;
-  const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.86, 0.94, 0.16, 72), stone);
+  const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.86, 0.94, 0.16, phone ? 24 : 72), stone);
   pedestal.position.y = 0.1;
   pedestal.castShadow = true;
   pedestal.receiveShadow = true;
   scene.add(pedestal);
 
   const tube = new THREE.Mesh(
-    new THREE.CylinderGeometry(columnRadius, columnRadius, columnHeight, 96, 1, true),
+    new THREE.CylinderGeometry(columnRadius, columnRadius, columnHeight, phone ? 28 : 96, 1, true),
     glassShell(0.42, [0.94, 0.88, 0.74], 0.005),
   );
   tube.position.set(0, columnBase + columnHeight / 2, 0);
@@ -575,7 +590,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
   tube.raycast = () => {};
   scene.add(tube);
 
-  const moteCount = 22;
+  const moteCount = phone ? 0 : 22;
   const motePositions = new Float32Array(moteCount * 3);
   const motes = Array.from({ length: moteCount }, (_, index) => {
     const mote = {
@@ -653,7 +668,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
       const map = trimMap(organImages[index]);
       textures.push(map);
       const spot = [...BACK, ...FRONT].find((item) => item.id === figure.id);
-      const station = makeStation(figure, map, spot, shadowMap);
+      const station = makeStation(figure, map, spot, shadowMap, phone);
       scene.add(station.group);
       stations.push(station.group);
       organs.push(station.organ);
@@ -694,6 +709,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
   }
 
   function onMove(event) {
+    if (phone) return;
     const rect = canvas.getBoundingClientRect();
     aimX = ((event.clientX - rect.left) / rect.width - 0.5) * 0.42;
     aimY = (0.5 - (event.clientY - rect.top) / rect.height) * 0.1;
@@ -715,6 +731,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
   function animate() {
     if (!alive) return;
     frame = requestAnimationFrame(animate);
+    if (document.hidden) return;
     const t = clock.getElapsedTime();
     const sway = reduce ? 0 : Math.sin(t * 0.18) * 0.42;
     const bob = reduce ? 0 : Math.sin(t * 0.22) * 0.03;
@@ -734,7 +751,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
     lamp.intensity = 0.4 + beat * 0.15;
     lamp.position.x = reduce ? 0 : Math.sin(t * 0.7) * 0.18;
     lamp.position.z = reduce ? 0.4 : 0.45 + Math.cos(t * 0.7) * 0.12;
-    if (!reduce) {
+    if (!reduce && moteCount) {
       const positions = moteGeometry.attributes.position;
       motes.forEach((mote, index) => {
         mote.height = (mote.height + mote.speed * 0.016) % 1;
@@ -779,7 +796,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
         material.dispose();
       });
     });
-    pmrem.dispose();
+    pmrem?.dispose();
     renderer.dispose();
   };
 }
