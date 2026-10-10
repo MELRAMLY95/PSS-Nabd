@@ -110,9 +110,9 @@ export default function Home() {
       <Header />
       <section id="organs" className="nabd-install nabd-enter">
         <h1 className="nabd-hero-title font-display font-light uppercase">
-          What if Oman 2040<br />
-          could <em className="nabd-shine font-normal text-bio">think</em>, <em className="nabd-shine font-normal text-sand">adapt</em><br />
-          and <em className="nabd-shine font-normal text-bone">heal</em> like<br />
+          What if Oman 2040 <br />
+          could <em className="nabd-shine font-normal text-bio">think</em>, <em className="nabd-shine font-normal text-sand">adapt</em> <br />
+          and <em className="nabd-shine font-normal text-bone">heal</em> like <br />
           a human body?
         </h1>
         <div className="nabd-install-body">
@@ -226,7 +226,7 @@ export default function Home() {
           <div>
             <Kicker>04 · Green skills as the control interface</Kicker>
             <h2 className="mt-4 font-display text-4xl font-light leading-tight md:text-5xl">The visitor becomes the brain.</h2>
-            <p className="mt-6 text-mist">Each visitor receives a realistic Oman 2040 challenge and a limited budget. Every strategy card helps somewhere and costs something elsewhere. There is no perfect single solution — only connected ones.</p>
+            <p className="mt-6 text-mist">Each visitor faces four Oman 2040 challenges. Every choice helps one part of the system and costs something elsewhere. There is no perfect single solution — only connected ones.</p>
             <div className="mt-8 rounded-2xl border border-line bg-ink-2/70 p-6 font-mono text-sm">
               <p className="text-dim">// example</p>
               <p className="mt-2 text-bone">Increase water production</p>
@@ -249,7 +249,7 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-            <p className="mt-8 text-mist">The judging panel has <span className="text-bone">three decisions</span> to stabilise the system, and must agree on each one. Poor choices and the model visibly deteriorates. Intelligent, connected choices and the whole ecosystem comes alive.</p>
+            <p className="mt-8 text-mist">The judging panel plays the same <span className="text-bone">four decisions</span>, and their names go on the score. Poor choices and the model visibly deteriorates. Intelligent, connected choices and the whole ecosystem comes alive.</p>
             <a href={sitePath("/experience")} className="mt-8 self-start rounded-full bg-ember px-6 py-3 font-semibold text-ink transition hover:-translate-y-0.5">Run the simulation</a>
           </div>
         </div>

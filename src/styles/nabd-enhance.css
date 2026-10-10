@@ -1158,6 +1158,12 @@ section[id] {
 .nabd-env em.is-up { color: var(--color-bio); }
 .nabd-env em.is-down { color: var(--color-ember); }
 
+@media (max-width: 760px) {
+  .nabd-env {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .nabd-xp {
   display: grid;
   grid-template-columns: 7rem 1fr;
@@ -1595,6 +1601,13 @@ section[id] {
     text-align: center;
     white-space: nowrap;
     touch-action: manipulation;
+  }
+
+  .nabd-subnav {
+    flex-wrap: wrap;
+    column-gap: 0.85rem;
+    row-gap: 0.4rem;
+    overflow: visible;
   }
 }
 
