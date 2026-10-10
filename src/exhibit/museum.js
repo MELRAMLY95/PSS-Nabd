@@ -124,24 +124,28 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function drawBoard(figure) {
+function drawBoard(figure, phone = false) {
+  const width = 1024;
+  const height = 1280;
+  const scale = phone ? 0.5 : 1;
   const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 1280;
+  canvas.width = width * scale;
+  canvas.height = height * scale;
   const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
   const pad = 64;
-  const inner = canvas.width - pad * 2;
-  const wash = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  const inner = width - pad * 2;
+  const wash = ctx.createLinearGradient(0, 0, 0, height);
   wash.addColorStop(0, "#1a1d24");
   wash.addColorStop(0.2, "#12110e");
   wash.addColorStop(1, "#07080c");
   ctx.fillStyle = wash;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, width, height);
   const sheen = ctx.createLinearGradient(0, 0, 0, 280);
   sheen.addColorStop(0, "rgba(230,211,164,0.1)");
   sheen.addColorStop(1, "rgba(230,211,164,0)");
   ctx.fillStyle = sheen;
-  ctx.fillRect(0, 0, canvas.width, 280);
+  ctx.fillRect(0, 0, width, 280);
 
   const number = String(ORDER.indexOf(figure.id) + 1).padStart(2, "0");
   const markY = 96;
@@ -162,7 +166,7 @@ function drawBoard(figure) {
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(pad, afterTitle + 10);
-  ctx.lineTo(canvas.width - pad, afterTitle + 10);
+  ctx.lineTo(width - pad, afterTitle + 10);
   ctx.stroke();
 
   let y = afterTitle + 58;
@@ -198,7 +202,7 @@ function drawBoard(figure) {
   ctx.textAlign = "left";
 
   const texture = canvasTexture(canvas);
-  texture.anisotropy = 16;
+  texture.anisotropy = phone ? 1 : 16;
   texture.needsUpdate = true;
   return texture;
 }
@@ -333,8 +337,8 @@ function specimenMaterial(texture) {
   });
 }
 
-function curvedPlane(width, height, bend = 0.035) {
-  const geometry = new THREE.PlaneGeometry(width, height, 12, 16);
+function curvedPlane(width, height, bend = 0.035, dense = true) {
+  const geometry = new THREE.PlaneGeometry(width, height, dense ? 12 : 3, dense ? 16 : 4);
   const position = geometry.attributes.position;
   for (let i = 0; i < position.count; i += 1) {
     const x = position.getX(i) / (width / 2);
@@ -420,7 +424,9 @@ function makeStation(figure, texture, spot, shadowMap, phone) {
 
   const glass = new THREE.Mesh(
     new THREE.CylinderGeometry(shellRadius, shellRadius, shellHeight, sides, 1, true),
-    glassShell(0.38, [0.94, 0.88, 0.74], 0.006),
+    phone
+      ? new THREE.MeshBasicMaterial({ color: 0xe6d3a4, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide })
+      : glassShell(0.38, [0.94, 0.88, 0.74], 0.006),
   );
   glass.position.set(0, shellBase + shellHeight / 2, 0);
   glass.renderOrder = 3;
@@ -433,7 +439,7 @@ function makeStation(figure, texture, spot, shadowMap, phone) {
     group.add(stationLamp);
   }
 
-  const organ = new THREE.Mesh(curvedPlane(organWidth, organHeight, 0.028), specimenMaterial(texture));
+  const organ = new THREE.Mesh(curvedPlane(organWidth, organHeight, 0.028, !phone), specimenMaterial(texture));
   organ.position.set(0, 0.68 + organHeight / 2, 0.02);
   organ.castShadow = true;
   group.add(organ);
@@ -454,7 +460,7 @@ function makeStation(figure, texture, spot, shadowMap, phone) {
 
   const board = new THREE.Mesh(
     new THREE.PlaneGeometry(boardWidth, boardHeight),
-    new THREE.MeshBasicMaterial({ map: drawBoard(figure), toneMapped: false }),
+    new THREE.MeshBasicMaterial({ map: drawBoard(figure, phone), toneMapped: false }),
   );
   board.position.set(0, boardHeight / 2, 0.01);
   placard.add(board);
@@ -483,8 +489,12 @@ function makeStation(figure, texture, spot, shadowMap, phone) {
 export function mountMuseum(canvas, { figures, onPick }) {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const phone = window.matchMedia("(max-width: 760px), (pointer: coarse) and (max-width: 1024px)").matches;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !phone, powerPreference: phone ? "low-power" : "high-performance" });
-  renderer.setPixelRatio(phone ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: !phone,
+    powerPreference: phone ? "default" : "high-performance",
+  });
+  renderer.setPixelRatio(phone ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setClearColor(0x07080c, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -508,8 +518,10 @@ export function mountMuseum(canvas, { figures, onPick }) {
     scene.environmentIntensity = 0.46;
   }
 
+  if (phone) scene.background = new THREE.Color(0x07080c);
+
   const floor = new THREE.Mesh(
-    new THREE.CircleGeometry(12, phone ? 36 : 96),
+    new THREE.CircleGeometry(phone ? 20 : 12, phone ? 36 : 96),
     phone
       ? new THREE.MeshStandardMaterial({ map: galleryFloor(), color: 0xd4c8b6, metalness: 0.08, roughness: 0.72 })
       : new THREE.MeshPhysicalMaterial({
@@ -527,7 +539,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
   scene.add(floor);
 
   const inlay = new THREE.Mesh(
-    new THREE.TorusGeometry(6.15, 0.012, 8, 160),
+    new THREE.TorusGeometry(6.15, 0.012, phone ? 4 : 8, phone ? 48 : 160),
     new THREE.MeshBasicMaterial({ color: 0xc6a56a }),
   );
   inlay.rotation.x = Math.PI / 2;
@@ -535,10 +547,10 @@ export function mountMuseum(canvas, { figures, onPick }) {
   scene.add(inlay);
 
   const wall = new THREE.Mesh(
-    new THREE.CylinderGeometry(13, 13, 8.2, phone ? 28 : 80, 1, true, Math.PI * 0.35, Math.PI * 1.3),
+    new THREE.CylinderGeometry(phone ? 18 : 13, phone ? 18 : 13, phone ? 14 : 8.2, phone ? 24 : 80, 1, true, Math.PI * 0.35, Math.PI * 1.3),
     new THREE.MeshStandardMaterial({ map: roomWall(), color: 0xffffff, roughness: 0.92, metalness: 0.04, side: THREE.BackSide }),
   );
-  wall.position.y = 3.1;
+  wall.position.y = phone ? 5.2 : 3.1;
   wall.receiveShadow = true;
   scene.add(wall);
 
@@ -583,7 +595,9 @@ export function mountMuseum(canvas, { figures, onPick }) {
 
   const tube = new THREE.Mesh(
     new THREE.CylinderGeometry(columnRadius, columnRadius, columnHeight, phone ? 28 : 96, 1, true),
-    glassShell(0.42, [0.94, 0.88, 0.74], 0.005),
+    phone
+      ? new THREE.MeshBasicMaterial({ color: 0xe6d3a4, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide })
+      : glassShell(0.42, [0.94, 0.88, 0.74], 0.005),
   );
   tube.position.set(0, columnBase + columnHeight / 2, 0);
   tube.renderOrder = 4;
@@ -684,13 +698,13 @@ export function mountMuseum(canvas, { figures, onPick }) {
   function resize() {
     const width = canvas.clientWidth || canvas.parentElement?.clientWidth || 1;
     const height = canvas.clientHeight || canvas.parentElement?.clientHeight || 1;
-    const nextPortrait = width < 760 && height > width;
+    const nextPortrait = width < 760;
     if (nextPortrait !== portrait) {
       portrait = nextPortrait;
-      frameZ = portrait ? 16.4 : CAM_Z;
-      frameY = portrait ? 2.55 : 2.05;
-      lookY = portrait ? 0.72 : 0.58;
-      camera.fov = portrait ? 58 : 36;
+      frameZ = portrait ? 10.15 : CAM_Z;
+      frameY = portrait ? 1.7 : 2.05;
+      lookY = portrait ? 1.0 : 0.58;
+      camera.fov = portrait ? 38 : 36;
       camera.position.z = frameZ;
       camera.position.y = frameY;
     }
@@ -724,16 +738,20 @@ export function mountMuseum(canvas, { figures, onPick }) {
   canvas.addEventListener("pointermove", onMove);
   canvas.addEventListener("click", onClick);
   const observer = new ResizeObserver(resize);
-  observer.observe(canvas.parentElement || canvas);
+  observer.observe(canvas);
+  if (canvas.parentElement) observer.observe(canvas.parentElement);
   resize();
 
   const clock = new THREE.Clock();
-  function animate() {
+  let lastFrame = 0;
+  function animate(now) {
     if (!alive) return;
     frame = requestAnimationFrame(animate);
     if (document.hidden) return;
+    if (phone && now - lastFrame < 34) return;
+    lastFrame = now || 0;
     const t = clock.getElapsedTime();
-    const sway = reduce ? 0 : Math.sin(t * 0.18) * 0.42;
+    const sway = reduce || phone ? 0 : Math.sin(t * 0.18) * 0.42;
     const bob = reduce ? 0 : Math.sin(t * 0.22) * 0.03;
     const look = reduce ? 0 : aimX * 0.45;
     camera.position.x += (sway + look - camera.position.x) * 0.045;
@@ -747,10 +765,12 @@ export function mountMuseum(canvas, { figures, onPick }) {
     figure.rotation.y = reduce ? 0 : Math.sin(t * 0.28) * 0.1;
     figure.position.y = bodyBase + bodyHeight / 2;
     const sweepY = columnBase + 0.08 + sweep * (columnHeight - 0.16);
-    tube.material.uniforms.sweepY.value = sweepY;
-    lamp.intensity = 0.4 + beat * 0.15;
-    lamp.position.x = reduce ? 0 : Math.sin(t * 0.7) * 0.18;
-    lamp.position.z = reduce ? 0.4 : 0.45 + Math.cos(t * 0.7) * 0.12;
+    if (tube.material.uniforms) tube.material.uniforms.sweepY.value = sweepY;
+    if (!phone) {
+      lamp.intensity = 0.4 + beat * 0.15;
+      lamp.position.x = reduce ? 0 : Math.sin(t * 0.7) * 0.18;
+      lamp.position.z = reduce ? 0.4 : 0.45 + Math.cos(t * 0.7) * 0.12;
+    }
     if (!reduce && moteCount) {
       const positions = moteGeometry.attributes.position;
       motes.forEach((mote, index) => {
@@ -767,15 +787,17 @@ export function mountMuseum(canvas, { figures, onPick }) {
     }
     organs.forEach((organ, index) => {
       const phase = t * 1.15 + index * 0.8;
-      organ.position.y = organ.userData.baseY + (reduce ? 0 : Math.sin(phase) * 0.1);
-      organ.rotation.y = reduce ? 0 : Math.sin(t * 0.55 + index * 1.1) * 0.7;
-      const scale = 1 + (reduce ? 0 : Math.sin(phase * 1.6) * 0.07);
+      organ.position.y = organ.userData.baseY + (reduce ? 0 : Math.sin(phase) * (phone ? 0.04 : 0.1));
+      organ.rotation.y = reduce || phone ? 0 : Math.sin(t * 0.55 + index * 1.1) * 0.7;
+      const scale = 1 + (reduce || phone ? 0 : Math.sin(phase * 1.6) * 0.07);
       organ.scale.setScalar(scale);
-      organ.material.emissiveIntensity = 0.02 + (reduce ? 0 : (0.5 + 0.5 * Math.sin(phase * 2)) * 0.1);
+      if (!phone) organ.material.emissiveIntensity = 0.02 + (reduce ? 0 : (0.5 + 0.5 * Math.sin(phase * 2)) * 0.1);
     });
-    cases.forEach((glass, index) => {
-      glass.material.uniforms.strength.value = 0.34 + (reduce ? 0 : Math.sin(t * 1.5 + index) * 0.05);
-    });
+    if (!phone) {
+      cases.forEach((glass, index) => {
+        glass.material.uniforms.strength.value = 0.34 + (reduce ? 0 : Math.sin(t * 1.5 + index) * 0.05);
+      });
+    }
     renderer.render(scene, camera);
   }
   animate();
