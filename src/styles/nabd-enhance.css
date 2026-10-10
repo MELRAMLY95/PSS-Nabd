@@ -1965,8 +1965,8 @@ section[id] {
 }
 
 @keyframes nabd-rise {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: none; }
+  from { transform: translateY(16px); }
+  to { transform: none; }
 }
 
 @keyframes nabd-word {
@@ -1985,8 +1985,8 @@ section[id] {
 }
 
 @keyframes nabd-score-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.96); }
-  to { opacity: 1; transform: none; }
+  from { transform: translateY(10px) scale(0.96); }
+  to { transform: none; }
 }
 
 @keyframes nabd-year {
@@ -2059,6 +2059,10 @@ section[id] {
   button.bg-ember,
   dialog[open] .nabd-map li {
     animation: none;
+  }
+
+  .rise {
+    opacity: 1;
   }
 
   .grain::after {
