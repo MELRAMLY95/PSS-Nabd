@@ -183,7 +183,12 @@ export default function BodyHall() {
           <li><span>04</span> <b>Apply</b> <em>where Oman is under strain</em></li>
         </ol>
       </header>
-      <canvas ref={canvasRef} className="hul-gl" aria-label="The Human Body: Nature's Innovation Lab. Choose an organ." />
+      <div className="hul-stage">
+        <canvas ref={canvasRef} className="hul-gl" aria-label="The Human Body: Nature's Innovation Lab. Choose an organ." />
+        <button type="button" className="hul-turn hul-turn-prev" aria-label="Previous specimen">‹</button>
+        <button type="button" className="hul-turn hul-turn-next" aria-label="Next specimen">›</button>
+        <p className="hul-phone-caption"><b></b><span></span></p>
+      </div>
       {figure && (
         <section className="hul-approach" aria-label={`${figure.name} simulation`}>
           <button type="button" className="hul-back-link" onClick={() => setOpenId(null)}>Return to the hall</button>
