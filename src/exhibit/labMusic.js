@@ -1,127 +1,73 @@
-const SCORE = [
-  { chord: [55, 59, 62, 67], bass: 43, melody: [74, 71, 67, 74] },
-  { chord: [50, 57, 62, 66], bass: 38, melody: [78, 76, 74, 69] },
-  { chord: [52, 59, 64, 67], bass: 40, melody: [76, 74, 71, 67] },
-  { chord: [48, 55, 60, 64], bass: 36, melody: [67, 76, 74, 72] },
-  { chord: [55, 59, 62, 67], bass: 43, melody: [74, 71, 69, 67] },
-  { chord: [48, 55, 60, 64], bass: 36, melody: [76, 79, 76, 72] },
-  { chord: [50, 57, 62, 66], bass: 38, melody: [74, 78, 81, 78] },
-  { chord: [55, 59, 62, 67], bass: 43, melody: [71, 74, 79, 74] },
+const FIGURES = [
+  { pad: [43, 50, 59], notes: [67, 71, 74, 76, 74, 71] },
+  { pad: [48, 52, 55], notes: [64, 67, 71, 72, 71, 67] },
+  { pad: [38, 45, 54], notes: [66, 69, 74, 76, 74, 69] },
+  { pad: [43, 50, 64], notes: [71, 74, 76, 79, 76, 74] },
 ];
 
-const BEAT = 0.72;
-const SCALE = [0, 2, 4, 6, 7, 9, 11];
+const NOTE = 0.48;
 
 const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
 
-function thirdBelow(note) {
-  const pc = ((note % 12) + 12) % 12;
-  const degree = SCALE.indexOf(pc);
-  if (degree < 0) return note - 4;
-  const target = SCALE[(degree - 2 + 7) % 7];
-  const delta = (pc - target + 12) % 12;
-  return note - (delta || 12);
-}
-
-function voice(ctx, dest, freq, start, duration, level, options) {
-  const attack = options.attack;
-  const release = Math.min(options.release, duration * 0.45);
-  const partials = options.partials;
-  const spread = options.spread;
-  const bus = ctx.createGain();
-  bus.gain.setValueAtTime(0.0001, start);
-  bus.gain.exponentialRampToValueAtTime(level, start + attack);
-  bus.gain.setValueAtTime(level, start + Math.max(attack + 0.02, duration - release));
-  bus.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-  bus.connect(dest);
-
-  const lfo = ctx.createOscillator();
-  const depth = ctx.createGain();
-  lfo.frequency.value = options.vibrato;
-  depth.gain.value = freq * options.depth;
-  lfo.connect(depth);
-  lfo.start(start);
-  lfo.stop(start + duration + 0.06);
-
-  const weight = partials.reduce((sum, [, amp]) => sum + amp, 0) * spread.length;
-  partials.forEach(([partial, amp]) => {
-    spread.forEach((cents) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = freq * partial * 2 ** (cents / 1200);
-      depth.connect(osc.frequency);
-      const gain = ctx.createGain();
-      gain.gain.value = amp / weight;
-      osc.connect(gain);
-      gain.connect(bus);
-      osc.start(start);
-      osc.stop(start + duration + 0.06);
-    });
-  });
-}
-
-function strings(ctx, dest, freq, start, duration, level, light) {
-  voice(ctx, dest, freq, start, duration, level, {
-    attack: light ? 0.06 : 0.22,
-    release: light ? 0.35 : 0.55,
-    vibrato: 4.6,
-    depth: light ? 0.005 : 0.004,
-    partials: light ? [[1, 1], [2, 0.4]] : [[1, 1], [2, 0.42], [3, 0.16], [4, 0.06]],
-    spread: light ? [0] : [-8, 0, 8],
-  });
-}
-
-function violin(ctx, dest, freq, start, duration, level, light) {
-  voice(ctx, dest, freq, start, duration, level, {
-    attack: 0.04,
-    release: 0.28,
-    vibrato: 5.3,
-    depth: light ? 0.008 : 0.007,
-    partials: light ? [[1, 1], [2, 0.48], [3, 0.16]] : [[1, 1], [2, 0.55], [3, 0.22], [4, 0.08], [5, 0.03]],
-    spread: light ? [0] : [-5, 0, 5],
-  });
-}
-
-function pluck(ctx, dest, freq, start, level, light) {
-  const bus = ctx.createGain();
-  bus.gain.setValueAtTime(0.0001, start);
-  bus.gain.exponentialRampToValueAtTime(level, start + 0.012);
-  bus.gain.exponentialRampToValueAtTime(0.0001, start + 1.25);
-  bus.connect(dest);
-  const partials = light ? [1, 2] : [1, 2, 3];
-  const weights = light ? [1, 0.35] : [1, 0.4, 0.14];
-  partials.forEach((partial, index) => {
+function piano(ctx, dest, midi, time, duration, level, light) {
+  const freq = hz(midi);
+  const partials = light ? [1, 2, 3] : [1, 2, 3, 4, 5];
+  const weights = partials.map((n) => 1 / (n ** 1.3));
+  const sum = weights.reduce((total, weight) => total + weight, 0);
+  partials.forEach((n, index) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
-    osc.frequency.value = freq * partial;
-    gain.gain.value = weights[index];
+    osc.frequency.value = freq * n * Math.sqrt(1 + 0.0001 * n * n);
+    const amp = (level * weights[index]) / sum;
+    const attack = 0.03 + index * 0.008;
+    const end = time + Math.max(0.4, duration * (1.02 - index * 0.1));
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(Math.max(amp, 0.0002), time + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
     osc.connect(gain);
-    gain.connect(bus);
-    osc.start(start);
-    osc.stop(start + 1.3);
+    gain.connect(dest);
+    osc.start(time);
+    osc.stop(end + 0.04);
   });
+}
+
+function makePad(ctx, dest, midi) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = hz(midi);
+  gain.gain.value = 0;
+  osc.connect(gain);
+  gain.connect(dest);
+  return { osc, gain, midi };
+}
+
+function glide(voice, midi, at, seconds) {
+  const from = hz(voice.midi);
+  const to = hz(midi);
+  voice.osc.frequency.cancelScheduledValues(at);
+  voice.osc.frequency.setValueAtTime(from, at);
+  if (Math.abs(to - from) > 0.4) voice.osc.frequency.exponentialRampToValueAtTime(to, at + seconds);
+  voice.midi = midi;
 }
 
 function hall(ctx, light) {
   const input = ctx.createGain();
   const wet = ctx.createGain();
-  wet.gain.value = light ? 0.22 : 0.42;
-  const times = light ? [0.047, 0.083] : [0.029, 0.041, 0.059, 0.083, 0.113];
-  times.forEach((time, index) => {
-    const delay = ctx.createDelay(0.2);
-    const feedback = ctx.createGain();
-    const tone = ctx.createBiquadFilter();
-    delay.delayTime.value = time;
-    feedback.gain.value = 0.34;
-    tone.type = "lowpass";
-    tone.frequency.value = 3200 - index * 280;
-    input.connect(delay);
-    delay.connect(tone);
-    tone.connect(feedback);
-    feedback.connect(delay);
-    tone.connect(wet);
-  });
+  wet.gain.value = light ? 0.12 : 0.18;
+  const delay = ctx.createDelay(0.5);
+  const feedback = ctx.createGain();
+  const tone = ctx.createBiquadFilter();
+  delay.delayTime.value = light ? 0.11 : 0.18;
+  feedback.gain.value = 0.22;
+  tone.type = "lowpass";
+  tone.frequency.value = 2200;
+  input.connect(delay);
+  delay.connect(tone);
+  tone.connect(feedback);
+  feedback.connect(delay);
+  tone.connect(wet);
   return { input, wet };
 }
 
@@ -149,24 +95,24 @@ export function startLabMusic() {
   }
   const resumePromise = ctx.resume();
 
-  const stringsBus = ctx.createGain();
-  const melodyBus = ctx.createGain();
-  const harpBus = ctx.createGain();
+  const padBus = ctx.createGain();
+  const pianoBus = ctx.createGain();
   const mix = ctx.createGain();
-  const stringsTone = ctx.createBiquadFilter();
-  const melodyTone = ctx.createBiquadFilter();
+  const padTone = ctx.createBiquadFilter();
+  const pianoTone = ctx.createBiquadFilter();
   const master = ctx.createGain();
   const room = hall(ctx, phone);
+  const padCount = phone ? 2 : 3;
+  const pads = FIGURES[0].pad.slice(0, padCount).map((midi) => makePad(ctx, padBus, midi));
 
-  stringsTone.type = "lowpass";
-  stringsTone.frequency.value = phone ? 4200 : 2800;
-  melodyTone.type = "lowpass";
-  melodyTone.frequency.value = phone ? 6400 : 5200;
-  stringsBus.connect(stringsTone);
-  melodyBus.connect(melodyTone);
-  stringsTone.connect(mix);
-  melodyTone.connect(mix);
-  harpBus.connect(mix);
+  padTone.type = "lowpass";
+  padTone.frequency.value = phone ? 1400 : 900;
+  pianoTone.type = "lowpass";
+  pianoTone.frequency.value = phone ? 4200 : 3000;
+  padBus.connect(padTone);
+  pianoBus.connect(pianoTone);
+  padTone.connect(mix);
+  pianoTone.connect(mix);
   mix.connect(room.input);
   master.gain.value = 0;
   master.connect(ctx.destination);
@@ -176,11 +122,11 @@ export function startLabMusic() {
     room.wet.connect(master);
   } else {
     const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -16;
-    comp.knee.value = 18;
-    comp.ratio.value = 2.2;
-    comp.attack.value = 0.012;
-    comp.release.value = 0.28;
+    comp.threshold.value = -18;
+    comp.knee.value = 16;
+    comp.ratio.value = 2;
+    comp.attack.value = 0.03;
+    comp.release.value = 0.4;
     mix.connect(comp);
     room.wet.connect(comp);
     comp.connect(master);
@@ -188,46 +134,45 @@ export function startLabMusic() {
 
   let when = 0;
   let index = 0;
+  let figure = 0;
   let stopped = false;
   let started = false;
   let timer = 0;
 
-  function schedule(bar, step, time) {
-    if (step === 0) {
-      const held = BEAT * 4.2;
-      bar.chord.forEach((note) => strings(ctx, stringsBus, hz(note), time, held, phone ? 0.16 : 0.11, phone));
-      strings(ctx, stringsBus, hz(bar.bass + 12), time, held, phone ? 0.2 : 0.12, phone);
-      if (!phone) strings(ctx, stringsBus, hz(bar.bass), time, held, 0.07, false);
+  function schedule(time, place) {
+    const pattern = FIGURES[figure % FIGURES.length];
+    if (place === 0) {
+      pattern.pad.slice(0, padCount).forEach((midi, padIndex) => glide(pads[padIndex], midi, time, NOTE * 4));
     }
-    const note = bar.melody[step];
-    violin(ctx, melodyBus, hz(note), time, BEAT * 1.12, phone ? 0.36 : 0.28, phone);
-    violin(ctx, melodyBus, hz(thirdBelow(note)), time, BEAT * 1.12, phone ? 0.16 : 0.12, phone);
-    if (!phone) violin(ctx, melodyBus, hz(note + 12), time, BEAT * 0.96, 0.045, false);
-    const harpNotes = [...bar.chord, ...[...bar.chord].reverse()];
-    pluck(ctx, harpBus, hz(harpNotes[step * 2] + 12), time, phone ? 0.14 : 0.09, phone);
-    pluck(ctx, harpBus, hz(harpNotes[step * 2 + 1] + 12), time + BEAT * 0.5, phone ? 0.1 : 0.07, phone);
+    const level = (phone ? 0.3 : 0.22) * (place === 0 ? 1.12 : 1);
+    piano(ctx, pianoBus, pattern.notes[place], time, NOTE * 2.4, level, phone);
   }
 
   function pump() {
     if (stopped) return;
-    const horizon = ctx.currentTime + 1.5;
+    const horizon = ctx.currentTime + 1.6;
     while (when < horizon) {
-      const bar = Math.floor(index / 4) % SCORE.length;
-      schedule(SCORE[bar], index % 4, when);
-      when += BEAT;
+      const place = index % 6;
+      if (place === 0) figure = Math.floor(index / 6);
+      schedule(when, place);
+      when += NOTE;
       index += 1;
     }
-    timer = window.setTimeout(pump, phone ? 240 : 180);
+    timer = window.setTimeout(pump, phone ? 220 : 160);
   }
 
   function begin() {
     if (started || stopped || ctx.state !== "running") return;
     started = true;
     const now = ctx.currentTime;
-    when = now + 0.05;
-    master.gain.cancelScheduledValues(now);
+    pads.forEach((voice) => {
+      voice.osc.start(now);
+      voice.gain.gain.setValueAtTime(0.0001, now);
+      voice.gain.gain.exponentialRampToValueAtTime(phone ? 0.07 : 0.05, now + 1.8);
+    });
+    when = now + 0.12;
     master.gain.setValueAtTime(0.0001, now);
-    master.gain.exponentialRampToValueAtTime(phone ? 0.5 : 0.3, now + (phone ? 0.12 : 0.22));
+    master.gain.exponentialRampToValueAtTime(phone ? 0.5 : 0.44, now + (phone ? 0.4 : 0.8));
     pump();
   }
 
@@ -241,7 +186,7 @@ export function startLabMusic() {
     const time = ctx.currentTime;
     master.gain.cancelScheduledValues(time);
     master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), time);
-    master.gain.linearRampToValueAtTime(0, time + 0.45);
-    window.setTimeout(() => ctx.close(), 560);
+    master.gain.linearRampToValueAtTime(0, time + 1.3);
+    window.setTimeout(() => ctx.close(), 1500);
   };
 }

@@ -1568,6 +1568,36 @@ section[id] {
   }
 }
 
+@media (max-width: 1023px) {
+  header.sticky > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 0.6rem;
+    row-gap: 0.45rem;
+    padding: 0.55rem 0.85rem 0.45rem;
+  }
+
+  header.sticky > div > span:last-child {
+    display: contents;
+  }
+
+  header.sticky .nabd-map-button {
+    justify-self: end;
+  }
+
+  header.sticky > div a.rounded-full {
+    grid-column: 1 / -1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    text-align: center;
+    white-space: nowrap;
+    touch-action: manipulation;
+  }
+}
+
 @media (min-width: 1024px) {
   .nabd-subnav {
     display: none;
@@ -2032,6 +2062,18 @@ section[id] {
   }
 
   .grain::after {
+    display: none;
+  }
+
+  .nabd-play-side { order: 2; }
+
+  .nabd-play-round { order: 1; }
+
+  .nabd-live:not(.nabd-hero-figure) .nabd-chest,
+  .nabd-live:not(.nabd-hero-figure) .nabd-heart-layer,
+  .nabd-live:not(.nabd-hero-figure) .nabd-heart-glow,
+  .nabd-live:not(.nabd-hero-figure) .nabd-vessels,
+  .nabd-play-body::after {
     display: none;
   }
 
