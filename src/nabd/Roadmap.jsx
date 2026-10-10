@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { sitePath } from "./site.js";
 
 const STOPS = [
@@ -65,43 +66,47 @@ export function Roadmap() {
     window.location.assign(href);
   }
 
+  const guide = (
+    <dialog
+      ref={dialogRef}
+      className="nabd-map"
+      aria-labelledby={titleId}
+      onClose={() => setOpen(false)}
+      onClick={(event) => {
+        if (event.target === dialogRef.current) setOpen(false);
+      }}
+    >
+      <div className="nabd-map-scroll">
+        <div className="nabd-map-head">
+          <div>
+            <p className="nabd-map-kicker">Guide</p>
+            <h2 id={titleId}>How to get everything from Nabd</h2>
+          </div>
+          <button type="button" className="nabd-map-close" onClick={() => setOpen(false)}>Close</button>
+        </div>
+        <p className="nabd-map-lead">Follow the stops in order. The story explains the system, the lab shows where each idea comes from, and the game is where you run it.</p>
+        <ol className="nabd-map-list">
+          {STOPS.map((stop, index) => (
+            <li key={stop.title}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <div>
+                <h3>{stop.title}</h3>
+                <p>{stop.text}</p>
+                <a href={stop.href} onClick={(event) => go(event, stop.href)}>{stop.label}</a>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </dialog>
+  );
+
   return (
     <>
       <button type="button" className="nabd-map-button" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
         Road map
       </button>
-      <dialog
-        ref={dialogRef}
-        className="nabd-map"
-        aria-labelledby={titleId}
-        onClose={() => setOpen(false)}
-        onClick={(event) => {
-          if (event.target === dialogRef.current) setOpen(false);
-        }}
-      >
-        <div className="nabd-map-scroll">
-          <div className="nabd-map-head">
-            <div>
-              <p className="nabd-map-kicker">Guide</p>
-              <h2 id={titleId}>How to get everything from Nabd</h2>
-            </div>
-            <button type="button" className="nabd-map-close" onClick={() => setOpen(false)}>Close</button>
-          </div>
-          <p className="nabd-map-lead">Follow the stops in order. The story explains the system, the lab shows where each idea comes from, and the game is where you run it.</p>
-          <ol className="nabd-map-list">
-            {STOPS.map((stop, index) => (
-              <li key={stop.title}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div>
-                  <h3>{stop.title}</h3>
-                  <p>{stop.text}</p>
-                  <a href={stop.href} onClick={(event) => go(event, stop.href)}>{stop.label}</a>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </dialog>
+      {createPortal(guide, document.body)}
     </>
   );
 }

@@ -56,7 +56,7 @@ button.bg-ember {
 
 @keyframes nabd-drift {
   from { background-position: 0 0, 0 0, 0 0; }
-  to { background-position: 48px 18px, -36px 22px, 0 0; }
+  to { background-position: 160px -70px, -140px 90px, 50px -40px; }
 }
 
 .nabd-map-button {
@@ -90,6 +90,11 @@ button.bg-ember {
   background: #101218;
   color: var(--color-bone);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: "Instrument Sans", "Segoe UI", sans-serif;
+  font-size: 1rem;
 }
 
 .nabd-map::backdrop {
@@ -616,39 +621,8 @@ section[id] {
   background: transparent;
 }
 
-.nabd-spot[data-organ="heart"]::before {
-  content: "";
-  position: absolute;
-  inset: 8%;
-  border-radius: 50%;
-  border: 1.5px solid rgba(212, 101, 106, 0.9);
-  box-shadow: 0 0 10px rgba(212, 101, 106, 0.45);
-  pointer-events: none;
-}
-
-.nabd-spot[data-organ="skin"] {
-  background: linear-gradient(125deg, rgba(198, 165, 106, 0.08), rgba(224, 138, 85, 0.42), rgba(239, 232, 220, 0.16), rgba(212, 101, 106, 0.28));
-  background-size: 220% 220%;
-  background-position: 0% 40%;
-  mix-blend-mode: soft-light;
-}
-
-.nabd-spot[data-organ="skin"].is-on {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--spot) 45%, transparent);
-}
-
 .nabd-quiet {
   opacity: 0.42;
-}
-
-.nabd-spot.is-on:not([data-organ="skin"]) {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--spot) 80%, transparent);
-}
-
-.nabd-spot[role="button"]:hover:not([data-organ="skin"]) {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--spot) 50%, transparent);
 }
 
 .nabd-fold {
@@ -1535,6 +1509,16 @@ section[id] {
 
 @media (prefers-reduced-motion: reduce) {
   body,
+  .nabd-kicker::before,
+  .nabd-float,
+  .nabd-dead,
+  .nabd-cycle-line,
+  .nabd-live:not(.nabd-hero-figure),
+  .nabd-alert .is-up,
+  .nabd-alert .is-down,
+  .nabd-skills > span,
+  .nabd-step.is-now,
+  .rise,
   .nabd-beat,
   .nabd-fill,
   .nabd-drop,
@@ -1711,13 +1695,8 @@ section[id] {
     animation: nabd-skin-shift 5.5s ease-in-out infinite;
   }
 
-  .nabd-organ-list button[data-organ="skin"]:hover .nabd-cue,
-  .nabd-spot[data-organ="skin"].is-on {
+  .nabd-organ-list button[data-organ="skin"]:hover .nabd-cue {
     animation-duration: 2.8s;
-  }
-
-  .nabd-spot[data-organ="heart"]::before {
-    animation: nabd-cue-beat 1.05s ease-in-out infinite;
   }
 
   .nabd-play-body::after,
@@ -1762,6 +1741,97 @@ section[id] {
     animation: nabd-cta 3.2s ease-in-out infinite;
   }
 
+  .nabd-kicker::before {
+    content: "";
+    display: inline-block;
+    width: 0.42rem;
+    height: 0.42rem;
+    margin-right: 0.55rem;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 0 0 rgba(198, 165, 106, 0.45);
+    vertical-align: 0.05em;
+    animation: nabd-beat 1.7s ease-in-out infinite;
+  }
+
+  .nabd-float {
+    animation: nabd-float 6.8s ease-in-out infinite;
+  }
+
+  .nabd-float:nth-child(2) { animation-delay: -1.7s; }
+  .nabd-float:nth-child(3) { animation-delay: -3.2s; }
+  .nabd-float:nth-child(4) { animation-delay: -4.6s; }
+
+  .nabd-vision {
+    animation: nabd-float 7.4s ease-in-out infinite;
+  }
+
+  .nabd-vision:nth-child(2) { animation-delay: -1.2s; }
+  .nabd-vision:nth-child(3) { animation-delay: -2.4s; }
+  .nabd-vision:nth-child(4) { animation-delay: -3.6s; }
+  .nabd-vision:nth-child(5) { animation-delay: -4.8s; }
+  .nabd-vision:nth-child(6) { animation-delay: -6s; }
+
+  .nabd-vision > p:first-child {
+    animation: nabd-word 3.6s ease-in-out infinite;
+  }
+
+  .nabd-dead {
+    animation: nabd-dim 4.8s ease-in-out infinite;
+  }
+
+  .nabd-cycle-line {
+    animation: nabd-rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .nabd-step.is-now {
+    animation: nabd-pick 2.2s ease-in-out infinite;
+  }
+
+  [role="tab"][aria-selected="true"] {
+    animation: nabd-pick 2.4s ease-in-out infinite;
+  }
+
+  .nabd-live:not(.nabd-hero-figure) {
+    transform-origin: 50% 78%;
+    animation: nabd-hero-breath 6.2s ease-in-out infinite;
+  }
+
+  .nabd-skills > span {
+    animation: nabd-float 5.2s ease-in-out infinite;
+  }
+
+  .nabd-skills > span:nth-child(2n) { animation-delay: -1.3s; }
+  .nabd-skills > span:nth-child(3n) { animation-delay: -2.5s; }
+
+  .nabd-alert .is-up,
+  .nabd-alert .is-down {
+    display: inline-block;
+  }
+
+  .nabd-alert .is-up { animation: nabd-bob 1.35s ease-in-out infinite; }
+  .nabd-alert .is-down { animation: nabd-bob-down 1.35s ease-in-out infinite; }
+
+  .rise {
+    animation: nabd-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  h2 em,
+  h1 em.nabd-shine {
+    animation: nabd-word 3.6s ease-in-out infinite;
+  }
+
+  dialog[open] .nabd-map-list li {
+    animation: nabd-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  dialog[open] .nabd-map-list li:nth-child(2) { animation-delay: 0.06s; }
+  dialog[open] .nabd-map-list li:nth-child(3) { animation-delay: 0.12s; }
+  dialog[open] .nabd-map-list li:nth-child(4) { animation-delay: 0.18s; }
+  dialog[open] .nabd-map-list li:nth-child(5) { animation-delay: 0.24s; }
+  dialog[open] .nabd-map-list li:nth-child(6) { animation-delay: 0.3s; }
+  dialog[open] .nabd-map-list li:nth-child(7) { animation-delay: 0.36s; }
+
   @supports (animation-timeline: view()) {
     .nabd-reveal {
       animation: nabd-rise linear both;
@@ -1773,7 +1843,7 @@ section[id] {
 
 @keyframes nabd-hero-breath {
   0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-1.4%) scale(1.015, 1.028); }
+  50% { transform: translateY(-2.2%) scale(1.02, 1.036); }
 }
 
 @keyframes nabd-hero-halo {
@@ -1845,4 +1915,24 @@ section[id] {
 @keyframes nabd-skin-shift {
   0%, 100% { background-position: 0% 40%; }
   50% { background-position: 100% 60%; }
+}
+
+@keyframes nabd-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes nabd-dim {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.42; }
+}
+
+@keyframes nabd-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes nabd-bob-down {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
 }

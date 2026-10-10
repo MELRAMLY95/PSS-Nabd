@@ -488,6 +488,10 @@ export function mountMuseum(canvas, { figures, onPick }) {
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 80);
   camera.position.set(0, 2.05, CAM_Z);
   camera.lookAt(0, 0.58, 0);
+  let frameZ = CAM_Z;
+  let frameY = 2.05;
+  let lookY = 0.58;
+  let portrait = false;
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -665,6 +669,16 @@ export function mountMuseum(canvas, { figures, onPick }) {
   function resize() {
     const width = canvas.clientWidth || canvas.parentElement?.clientWidth || 1;
     const height = canvas.clientHeight || canvas.parentElement?.clientHeight || 1;
+    const nextPortrait = width < 760 && height > width;
+    if (nextPortrait !== portrait) {
+      portrait = nextPortrait;
+      frameZ = portrait ? 16.4 : CAM_Z;
+      frameY = portrait ? 2.55 : 2.05;
+      lookY = portrait ? 0.72 : 0.58;
+      camera.fov = portrait ? 58 : 36;
+      camera.position.z = frameZ;
+      camera.position.y = frameY;
+    }
     renderer.setSize(width, height, false);
     camera.aspect = width / Math.max(height, 1);
     camera.updateProjectionMatrix();
@@ -702,18 +716,18 @@ export function mountMuseum(canvas, { figures, onPick }) {
     if (!alive) return;
     frame = requestAnimationFrame(animate);
     const t = clock.getElapsedTime();
-    const sway = reduce ? 0 : Math.sin(t * 0.18) * 0.28;
+    const sway = reduce ? 0 : Math.sin(t * 0.18) * 0.42;
     const bob = reduce ? 0 : Math.sin(t * 0.22) * 0.03;
     const look = reduce ? 0 : aimX * 0.45;
     camera.position.x += (sway + look - camera.position.x) * 0.045;
-    camera.position.z += (CAM_Z - camera.position.z) * 0.045;
-    camera.position.y += (2.05 + bob + (reduce ? 0 : aimY) * 0.45 - camera.position.y) * 0.045;
-    camera.lookAt(camera.position.x * 0.08, 0.58, 0);
+    camera.position.z += (frameZ - camera.position.z) * 0.045;
+    camera.position.y += (frameY + bob + (reduce ? 0 : aimY) * 0.45 - camera.position.y) * 0.045;
+    camera.lookAt(camera.position.x * 0.08, lookY, 0);
 
     const beat = Math.pow(0.5 + 0.5 * Math.sin(t * 3.1), 2);
     const sweep = reduce ? 0.58 : (t * 0.16) % 1;
     figure.scale.setScalar(1);
-    figure.rotation.y = reduce ? 0 : Math.sin(t * 0.28) * 0.06;
+    figure.rotation.y = reduce ? 0 : Math.sin(t * 0.28) * 0.1;
     figure.position.y = bodyBase + bodyHeight / 2;
     const sweepY = columnBase + 0.08 + sweep * (columnHeight - 0.16);
     tube.material.uniforms.sweepY.value = sweepY;
@@ -736,9 +750,9 @@ export function mountMuseum(canvas, { figures, onPick }) {
     }
     organs.forEach((organ, index) => {
       const phase = t * 1.15 + index * 0.8;
-      organ.position.y = organ.userData.baseY + (reduce ? 0 : Math.sin(phase) * 0.06);
-      organ.rotation.y = reduce ? 0 : Math.sin(t * 0.55 + index * 1.1) * 0.48;
-      const scale = 1 + (reduce ? 0 : Math.sin(phase * 1.6) * 0.045);
+      organ.position.y = organ.userData.baseY + (reduce ? 0 : Math.sin(phase) * 0.1);
+      organ.rotation.y = reduce ? 0 : Math.sin(t * 0.55 + index * 1.1) * 0.7;
+      const scale = 1 + (reduce ? 0 : Math.sin(phase * 1.6) * 0.07);
       organ.scale.setScalar(scale);
       organ.material.emissiveIntensity = 0.02 + (reduce ? 0 : (0.5 + 0.5 * Math.sin(phase * 2)) * 0.1);
     });

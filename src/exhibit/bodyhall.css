@@ -558,6 +558,15 @@
     animation: hul-title 6.5s ease-in-out infinite;
   }
 
+  .hul-sign h1 span {
+    background-size: 220% 100%;
+    animation: hul-sheen 5.5s ease-in-out infinite;
+  }
+
+  .hul-sign > p {
+    animation: hul-pulse 4.8s ease-in-out infinite;
+  }
+
   .hul-sign li span {
     animation: hul-num 3.6s ease-in-out infinite;
   }
@@ -589,8 +598,8 @@
 }
 
 @keyframes hul-title {
-  0%, 100% { text-shadow: 0 0 0 transparent; }
-  50% { text-shadow: 0 0 28px rgba(198, 165, 106, 0.38); }
+  0%, 100% { text-shadow: 0 0 0 transparent; transform: translateY(0); }
+  50% { text-shadow: 0 0 32px rgba(198, 165, 106, 0.55); transform: translateY(-5px); }
 }
 
 @keyframes hul-num {
@@ -606,6 +615,92 @@
 @keyframes hul-in {
   from { opacity: 0; transform: translateY(18px); }
   to { opacity: 1; transform: none; }
+}
+
+@keyframes hul-sheen {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@media (max-width: 760px) {
+  .hul-nav {
+    top: 0.4rem;
+    right: 0.55rem;
+    left: 0.55rem;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+  }
+
+  .hul-nav-end { gap: 0.4rem; }
+
+  .hul .nabd-map-button,
+  .hul-music {
+    padding: 0.28rem 0.45rem;
+    letter-spacing: 0.08em;
+  }
+
+  .hul-gl { transform: translateY(28px); }
+
+  .hul-sign {
+    top: 2.65rem;
+    right: 0.7rem;
+    left: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .hul-sign > p { display: none; }
+
+  .hul-sign h1 {
+    width: 100%;
+    font-size: clamp(1.5rem, 7vw, 2rem);
+  }
+
+  .hul-sub {
+    font-size: 0.82rem;
+  }
+
+  .hul-sign ol {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.1rem 0.7rem;
+    max-width: 100%;
+  }
+
+  .hul-sign li {
+    display: flex;
+    gap: 0.28rem;
+    padding: 0;
+    font-size: 11px;
+  }
+
+  .hul-sign li em { display: none; }
+
+  .hul-sign::after { display: none; }
+
+  .hul-approach {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    align-items: start;
+    padding: 3.1rem 0.8rem 1.2rem;
+  }
+
+  .hul-approach-specimen { height: 190px; }
+
+  .hul-approach-board { max-height: none; }
+
+  .hul.is-approached .hul-nav { visibility: hidden; }
+
+  .hul-back-link {
+    top: 0.7rem;
+    left: 0.8rem;
+    z-index: 2;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

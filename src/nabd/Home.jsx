@@ -36,12 +36,12 @@ const SKILLS = ["Critical thinking", "Problem solving", "Systems thinking", "Inn
 const FAILURE_SIGNS = [["Water availability", "↓"], ["Temperature", "↑"], ["Energy demand", "↑"], ["Waste", "↑"], ["Food security", "↓"]];
 
 function Kicker({ children }) {
-  return <p className="font-mono text-xs uppercase tracking-[0.25em] text-sand">{children}</p>;
+  return <p className="nabd-kicker font-mono text-xs uppercase tracking-[0.25em] text-sand">{children}</p>;
 }
 
 function HealthCards({ title, items, accent, note, picked, onPick }) {
   return (
-    <div className="rounded-3xl border border-line bg-ink-2/60 p-8">
+    <div className="nabd-float rounded-3xl border border-line bg-ink-2/60 p-8">
       <p className={`font-mono text-xs uppercase tracking-[0.2em] ${accent}`}>{title}</p>
       <ol className="mt-6 space-y-2">
         {items.map((item, index) => (
@@ -143,7 +143,7 @@ export default function Home() {
             <div className="flex flex-col justify-center gap-8">
               <div>
                 <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">How most systems work today</p>
-                <div className="mt-3 flex flex-wrap items-center gap-3 font-display text-2xl text-dim line-through decoration-ember/70 md:text-3xl">
+                <div className="nabd-dead mt-3 flex flex-wrap items-center gap-3 font-display text-2xl text-dim line-through decoration-ember/70 md:text-3xl">
                   <span>extract</span>→<span>consume</span>→<span>discard</span>
                 </div>
               </div>
@@ -151,14 +151,14 @@ export default function Home() {
                 <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-bio">How a living system works</p>
                 <div className="mt-3">
                   <CycleWords cycle={cycle} onChoose={chooseCycle} />
-                  <p className="mt-3 text-lg leading-relaxed text-bone" role="tabpanel">{CYCLE[cycle].line}</p>
+                  <p key={cycle} className="nabd-cycle-line mt-3 text-lg leading-relaxed text-bone" role="tabpanel">{CYCLE[cycle].line}</p>
                 </div>
               </div>
               <ul className="grid gap-4 text-sm text-mist sm:grid-cols-2">
-                <li className="rounded-xl border border-line p-4"><span className="text-bone">If an area needs more,</span> the system detects it and redirects resources.</li>
-                <li className="rounded-xl border border-line p-4"><span className="text-bone">If resources run low,</span> it cuts unnecessary consumption.</li>
-                <li className="rounded-xl border border-line p-4"><span className="text-bone">If waste is produced,</span> it recovers useful materials first.</li>
-                <li className="rounded-xl border border-line p-4"><span className="text-bone">If conditions change,</span> it adapts instead of running at maximum.</li>
+                <li className="nabd-float rounded-xl border border-line p-4"><span className="text-bone">If an area needs more,</span> the system detects it and redirects resources.</li>
+                <li className="nabd-float rounded-xl border border-line p-4"><span className="text-bone">If resources run low,</span> it cuts unnecessary consumption.</li>
+                <li className="nabd-float rounded-xl border border-line p-4"><span className="text-bone">If waste is produced,</span> it recovers useful materials first.</li>
+                <li className="nabd-float rounded-xl border border-line p-4"><span className="text-bone">If conditions change,</span> it adapts instead of running at maximum.</li>
               </ul>
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function Home() {
             <ol className="mt-10 space-y-2">
               {CHAIN.map((item, index) => (
                 <li key={item.tag}>
-                  <button type="button" onClick={() => { setPlaying(false); setStep(index); }} className={`nabd-step flex w-full items-start gap-4 rounded-xl px-4 py-3 text-left transition ${index === step ? "bg-ink-3 text-bone" : index < step ? "text-mist" : "text-dim hover:text-mist"}`}>
+                  <button type="button" onClick={() => { setPlaying(false); setStep(index); }} className={`nabd-step flex w-full items-start gap-4 rounded-xl px-4 py-3 text-left transition ${index === step ? "is-now bg-ink-3 text-bone" : index < step ? "text-mist" : "text-dim hover:text-mist"}`}>
                     <span className={`mt-0.5 w-24 shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] ${index === step ? "text-bio" : ""}`}>{String(index + 1).padStart(2, "0")} {item.tag}</span>
                     <span className="text-[15px] leading-snug">{item.text}</span>
                     {index === step && playing && <span className="nabd-fill" />}
@@ -212,7 +212,7 @@ export default function Home() {
           <HealthCards title="Poor decisions" items={STAGES.slice(4)} accent="text-ember" note="Organs dim, circulation slows, the ground cracks — and at failure, the body flickers." picked={picked} onPick={setPicked} />
         </div>
         <div className="nabd-readout">
-          <p className={`font-display text-5xl ${toneClass(pickedStage.tone)}`}>{stageBand(pickedStage)}</p>
+          <p key={pickedStage.name} className={`nabd-cycle-line font-display text-5xl ${toneClass(pickedStage.tone)}`}>{stageBand(pickedStage)}</p>
           <div>
             <p className={`font-display text-3xl ${toneClass(pickedStage.tone)}`}>{toneMark(pickedStage.tone)} {pickedStage.name}</p>
             <p className="mt-1 text-mist">{pickedStage.description}</p>
@@ -234,18 +234,18 @@ export default function Home() {
               <p className="text-ember">→ higher energy demand</p>
               <p className="mt-3 text-sand">How do you solve the second problem you just created?</p>
             </div>
-            <div className="mt-8 flex flex-wrap gap-2">
+            <div className="nabd-skills mt-8 flex flex-wrap gap-2">
               {SKILLS.map((skill) => <span key={skill} className="rounded-full border border-line px-3 py-1 text-xs text-mist">{skill}</span>)}
             </div>
           </div>
-          <div className="flex flex-col justify-center rounded-3xl border border-ember/40 bg-ink-2/80 p-8 md:p-10">
+          <div className="nabd-float flex flex-col justify-center rounded-3xl border border-ember/40 bg-ink-2/80 p-8 md:p-10">
             <p className="font-mono text-xs uppercase tracking-[0.3em] text-ember">The ultimate challenge</p>
             <p className="mt-3 font-display text-5xl md:text-6xl">2040: System failure</p>
-            <ul className="mt-8 grid grid-cols-2 gap-3 font-mono text-sm">
+            <ul className="nabd-alert mt-8 grid grid-cols-2 gap-3 font-mono text-sm">
               {FAILURE_SIGNS.map(([label, mark]) => (
                 <li key={label} className="flex items-center justify-between rounded-lg bg-ink-3 px-3 py-2">
                   <span className="text-mist">{label}</span>
-                  <span className="text-ember">{mark}</span>
+                  <span className={mark === "↑" ? "is-up text-ember" : "is-down text-ember"}>{mark}</span>
                 </li>
               ))}
             </ul>
@@ -280,11 +280,11 @@ export default function Home() {
             <Kicker>06 · From model to invention</Kicker>
             <h2 className="mt-4 font-display text-4xl font-light leading-tight">We stopped making a model of the planet, and started designing a system.</h2>
             <div className="mt-8 space-y-4">
-              <div className="rounded-2xl border border-line p-5">
+              <div className="nabd-float rounded-2xl border border-line p-5">
                 <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">Original idea</p>
                 <p className="mt-2 text-mist">Human body → represents the environment → people make sustainable choices.</p>
               </div>
-              <div className="rounded-2xl border border-bio/50 bg-bio/5 p-5">
+              <div className="nabd-float rounded-2xl border border-bio/50 bg-bio/5 p-5">
                 <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-bio">Nabd</p>
                 <p className="mt-2 text-bone">Human body → provides biological mechanisms → mechanisms inspire a technological system → a working prototype shows how it could run in Oman.</p>
               </div>
@@ -305,7 +305,7 @@ export default function Home() {
           Survival, and leaving enough that the next generation can also survive, is the minimum. The ambition is past that: to strive, to enjoy, and to develop quickly, while harm to any generation is not part of the plan. The heart of Nabd is energy that could support that pace. The kidneys, lungs, liver and skin are the inventions that run on it.
         </p>
         <p className="mx-auto mt-16 max-w-3xl font-display text-4xl leading-tight md:text-6xl">
-          If the human body can survive by working as one interconnected system, <em className="text-bio">why shouldn’t our future do the same?</em>
+          If the human body can survive by working as one interconnected system, <em className="nabd-shine text-bio">why shouldn’t our future do the same?</em>
         </p>
         <a href={sitePath("/experience")} className="mt-12 inline-block rounded-full bg-bio px-8 py-4 font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_32px_rgba(198,165,106,0.45)]">Become the brain of Oman 2040</a>
       </section>

@@ -179,7 +179,7 @@ function Intro({ names, setNames, onStart }) {
       <main className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 lg:grid-cols-[1fr_minmax(0,340px)]">
         <div>
           <p className="rise font-mono text-xs uppercase tracking-[0.3em] text-sand">Decision game</p>
-          <h1 className="rise mt-4 font-display text-5xl font-light leading-[1.02] md:text-7xl" style={{ animationDelay: "0.1s" }}>You are the <em className="text-bio">brain</em> of Oman 2040.</h1>
+          <h1 className="rise mt-4 font-display text-5xl font-light leading-[1.02] md:text-7xl" style={{ animationDelay: "0.1s" }}>You are the <em className="nabd-shine text-bio">brain</em> of Oman 2040.</h1>
           <p className="rise mt-6 max-w-xl text-lg text-mist" style={{ animationDelay: "0.2s" }}>Four short challenges. Each one, you make a single decision. A quick fix can help one part of the body and hurt another. A careful choice earns more XP.</p>
           <ol className="rise mt-6 flex flex-wrap gap-2" style={{ animationDelay: "0.25s" }}>
             {[["2028", "Water"], ["2032", "Energy"], ["2036", "Waste"], ["2040", "Crisis"]].map(([year, label]) => (
@@ -221,11 +221,11 @@ function Alert({ onClose }) {
       <div className="rise relative max-w-xl rounded-3xl border border-blood/60 bg-ink-2 p-8 text-center md:p-12">
         <p className="failing font-mono text-xs uppercase tracking-[0.4em] text-blood">✕ Alert · all systems</p>
         <h2 className="mt-4 font-display text-5xl md:text-7xl">2040: System failure</h2>
-        <ul className="mx-auto mt-8 grid max-w-sm grid-cols-2 gap-2 text-left font-mono text-sm">
+        <ul className="nabd-alert mx-auto mt-8 grid max-w-sm grid-cols-2 gap-2 text-left font-mono text-sm">
           {ALERTS.map(([label, mark]) => (
             <li key={label} className="flex justify-between rounded-md bg-ink-3 px-3 py-1.5">
               <span className="text-mist">{label}</span>
-              <span className="text-blood">{mark}</span>
+              <span className={mark === "↑" ? "is-up text-blood" : "is-down text-blood"}>{mark}</span>
             </li>
           ))}
         </ul>
