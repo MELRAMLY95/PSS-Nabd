@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { startLabMusic } from "./labMusic.js";
 import { OrganBoard } from "./OrganBoard.jsx";
+import { CrisisPanel, useCrisisState } from "./ExhibitExtras.jsx";
 import { Roadmap } from "../nabd/Roadmap.jsx";
 import { sitePath } from "../nabd/site.js";
 import { mountMuseum } from "./museum.js";
@@ -29,10 +30,10 @@ const FIGURES = [
     id: "heart",
     file: "figure-heart.jpg",
     name: "Heart",
-    title: "PULSEGRID",
-    inspiration: "The heart keeps resources moving toward the place of need.",
-    principle: "Supply, storage and demand are one balance.",
-    oman: "PULSEGRID stores clean supply and serves the load that needs it.",
+    title: "NABD HEART — CLEAN ENERGY CIRCULATION",
+    inspiration: "The heart keeps a coordinated flow. Local vessels decide what each tissue receives.",
+    principle: "Measure the kilowatts, serve the building, share only real surplus, then store what the battery can take.",
+    oman: "Four modelled facilities. Sharing moves electricity. It does not create any.",
   },
   {
     id: "skin",
@@ -109,6 +110,8 @@ export default function BodyHall() {
   const canvasRef = useRef(null);
   const pickRef = useRef(() => {});
   const [openId, setOpenId] = useState(null);
+  const [crisis, setCrisis] = useState(false);
+  const shared = useCrisisState();
   const figure = FIGURES.find((item) => item.id === openId) ?? null;
 
   useEffect(() => {
@@ -130,24 +133,29 @@ export default function BodyHall() {
 
   useEffect(() => {
     const onKey = (event) => {
-      if (event.key === "Escape") setOpenId(null);
+      if (event.key === "Escape") {
+      setOpenId(null);
+      setCrisis(false);
+    }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   function approach(id) {
+    setCrisis(false);
     setOpenId(id);
   }
   pickRef.current = approach;
 
   return (
-    <div className={`hul${figure ? " is-approached" : ""}`}>
+    <div className={`hul${figure || crisis ? " is-approached" : ""}`}>
       <nav className="hul-nav">
         <a href={sitePath("/")}>← Nabd</a>
         <Roadmap />
         <span className="hul-nav-end">
           <LabMusic />
+          <button type="button" className="hul-text" onClick={() => { setOpenId(null); setCrisis(true); }}>Crisis</button>
           <a href={sitePath("/experience")}>Become the brain</a>
         </span>
       </nav>
@@ -178,7 +186,15 @@ export default function BodyHall() {
             <span className="hul-stand" />
           </div>
           <div className="hul-approach-board">
-            <OrganBoard id={figure.id} name={figure.name} />
+            <OrganBoard id={figure.id} name={figure.name} crisis={shared} onCrisis={() => { setOpenId(null); setCrisis(true); }} />
+          </div>
+        </section>
+      )}
+      {crisis && !figure && (
+        <section className="hul-approach is-crisis" aria-label="NABD crisis challenge">
+          <button type="button" className="hul-back-link" onClick={() => setCrisis(false)}>Return to the hall</button>
+          <div className="hul-approach-board">
+            <CrisisPanel crisis={shared} />
           </div>
         </section>
       )}
