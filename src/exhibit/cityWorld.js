@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 const BASE_W = 16.8;
 const BASE_D = 11.2;
@@ -11,12 +12,14 @@ export function mountCity(host, { getState, onSelect }) {
     alpha: false,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.max(2, Math.min(window.devicePixelRatio || 1, 2)));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setClearColor(0xf7f6f4, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   renderer.domElement.style.width = "100%";
   renderer.domElement.style.height = "100%";
   renderer.domElement.style.display = "block";
@@ -43,7 +46,7 @@ export function mountCity(host, { getState, onSelect }) {
   const sun = new THREE.DirectionalLight(0xfff6ea, 1.2);
   sun.position.copy(sunAim);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(4096, 4096);
+  sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -14;
   sun.shadow.camera.right = 14;
   sun.shadow.camera.top = 12;
@@ -710,23 +713,33 @@ export function mountCity(host, { getState, onSelect }) {
       rail.position.x = side * (span / 2);
       bank.add(rail);
     });
+    const bladeGeo = new THREE.BoxGeometry(span - 0.05, 0.008, bladeDepth);
+    const lipGeo = new THREE.BoxGeometry(span - 0.05, 0.016, 0.006).translate(0, 0.008, 0.012);
+    const blades = new THREE.InstancedMesh(mergeGeometries([bladeGeo, lipGeo], false), louvreMat, count);
+    bladeGeo.dispose();
+    lipGeo.dispose();
+    blades.castShadow = true;
+    blades.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    bank.add(blades);
     for (let i = 0; i < count; i += 1) {
-      const hinge = new THREE.Group();
+      const hinge = new THREE.Object3D();
       hinge.position.z = -depth / 2 + (i + 0.5) * (depth / count);
-      const blade = new THREE.Mesh(new THREE.BoxGeometry(span - 0.05, 0.008, bladeDepth), louvreMat);
-      blade.castShadow = true;
-      const lip = new THREE.Mesh(new THREE.BoxGeometry(span - 0.05, 0.016, 0.006), louvreMat);
-      lip.position.set(0, 0.008, 0.012);
-      hinge.add(blade, lip);
       [-1, 1].forEach((side) => {
         const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.028, 6), frameMat);
         pin.rotation.z = Math.PI / 2;
-        pin.position.x = side * (span / 2 - 0.012);
-        hinge.add(pin);
+        pin.position.set(side * (span / 2 - 0.012), 0, hinge.position.z);
+        bank.add(pin);
       });
-      bank.add(hinge);
       slats.push(hinge);
     }
+    slats.sync = () => {
+      slats.forEach((hinge, index) => {
+        hinge.updateMatrix();
+        blades.setMatrixAt(index, hinge.matrix);
+      });
+      blades.instanceMatrix.needsUpdate = true;
+    };
+    slats.sync();
     return { bank, slats };
   }
 
@@ -2078,6 +2091,17 @@ export function mountCity(host, { getState, onSelect }) {
     scene.add(group);
   }
 
+  bakeStatic(scene, [
+    sunDisc, sunGlow, shadeCanopy, fan, scanner, lungs.userData.needle, thermoMercury, filterBead,
+    towerWater, towerSurface, towerMeniscus, pumpRotor, gantry, scanBar,
+    ...Object.values(badges), ...Object.values(barriers), ...servos, ...intakeFins, ...specks, ...ribbons,
+    ...towerBubbles, ...crops, ...drops, ...wets, ...sortJobs, ...bayFills, ...lids, ...ripples, ...glints,
+    ...pulses, ...charges, ...fronds, ...clouds,
+    ...movingRoofs.flatMap((roof) => [roof.pivot, ...(roof.slats || [])]),
+    ...drips.flatMap((drip) => drip.beads),
+    ...fountains.flatMap((jet) => jet.beads),
+  ]);
+
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   let down = null;
@@ -2144,9 +2168,12 @@ export function mountCity(host, { getState, onSelect }) {
   });
 
   let alive = true;
+  let frames = 0;
   const clock = new THREE.Clock();
   renderer.setAnimationLoop(() => {
-    if (!alive) return;
+    if (!alive || document.hidden) return;
+    frames += 1;
+    if (frames % 6 === 0) renderer.shadowMap.needsUpdate = true;
     const dt = Math.min(0.05, clock.getDelta());
     const state = getState() || {};
     const live = state.live || {};
@@ -2185,6 +2212,7 @@ export function mountCity(host, { getState, onSelect }) {
         roof.slats.forEach((slat) => {
           slat.rotation.x += (angle - slat.rotation.x) * Math.min(1, dt * 1.8);
         });
+        roof.slats.sync?.();
         return;
       }
       const target = roof.kind === "solar" ? sunTilt - wave * 0.05 : -0.12 - wave * 0.2;
@@ -2429,6 +2457,57 @@ function sharpen(texture) {
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
   return texture;
+}
+
+function bakeStatic(scene, moving) {
+  const animated = new Set(moving.filter(Boolean));
+  const anchorOf = (mesh) => {
+    if (animated.has(mesh)) return null;
+    for (let node = mesh.parent; node; node = node.parent) {
+      if (!node.visible) return null;
+      if (node === scene || animated.has(node)) return node;
+    }
+    return null;
+  };
+  scene.updateMatrixWorld(true);
+  const buckets = new Map();
+  scene.traverse((mesh) => {
+    if (!mesh.isMesh || mesh.isInstancedMesh || !mesh.visible || Array.isArray(mesh.material)) return;
+    if (mesh.material.transparent || mesh.renderOrder !== 0 || mesh.children.length) return;
+    const anchor = anchorOf(mesh);
+    if (!anchor) return;
+    const local = new THREE.Matrix4().copy(anchor.matrixWorld).invert().multiply(mesh.matrixWorld);
+    if (local.determinant() < 0) return;
+    const geometry = mesh.geometry;
+    if (Object.keys(geometry.morphAttributes).length) return;
+    const key = [
+      anchor.uuid,
+      mesh.material.uuid,
+      mesh.castShadow,
+      mesh.receiveShadow,
+      mesh.userData.id || "",
+      Object.keys(geometry.attributes).sort().join(","),
+      geometry.index ? "i" : "n",
+    ].join("|");
+    if (!buckets.has(key)) buckets.set(key, { anchor, meshes: [], matrices: [] });
+    const bucket = buckets.get(key);
+    bucket.meshes.push(mesh);
+    bucket.matrices.push(local);
+  });
+  buckets.forEach(({ anchor, meshes, matrices }) => {
+    if (meshes.length < 2) return;
+    const parts = meshes.map((mesh, index) => mesh.geometry.clone().applyMatrix4(matrices[index]));
+    const merged = mergeGeometries(parts, false);
+    parts.forEach((part) => part.dispose());
+    if (!merged) return;
+    const first = meshes[0];
+    const baked = new THREE.Mesh(merged, first.material);
+    baked.castShadow = first.castShadow;
+    baked.receiveShadow = first.receiveShadow;
+    if (first.userData.id) baked.userData.id = first.userData.id;
+    meshes.forEach((mesh) => mesh.removeFromParent());
+    anchor.add(baked);
+  });
 }
 
 function paintFacade(hex) {

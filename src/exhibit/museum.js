@@ -441,12 +441,6 @@ function makeStation(figure, texture, spot, shadowMap, phone) {
   glass.raycast = () => {};
   group.add(glass);
 
-  if (!phone) {
-    const stationLamp = new THREE.PointLight(0xe6d3a4, 0.28, 1.6, 2);
-    stationLamp.position.set(0, shellBase + 0.12, 0.22);
-    group.add(stationLamp);
-  }
-
   const organ = new THREE.Mesh(curvedPlane(organWidth, organHeight, 0.028, true), specimenMaterial(texture, phone));
   organ.position.set(0, 0.68 + organHeight / 2, 0.02);
   organ.castShadow = true;
@@ -503,13 +497,15 @@ export function mountMuseum(canvas, { figures, onPick }) {
     antialias: true,
     powerPreference: phone ? "default" : "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, phone ? 2 : 1.5));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, phone ? 1.75 : 1.25));
   renderer.setClearColor(0x07080c, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = phone ? 1.14 : 1.06;
   renderer.shadowMap.enabled = !phone;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 80);
@@ -568,7 +564,7 @@ export function mountMuseum(canvas, { figures, onPick }) {
   const key = new THREE.DirectionalLight(0xfff1dc, 2.15);
   key.position.set(3.8, 6.4, 5.2);
   key.castShadow = !phone;
-  if (!phone) key.shadow.mapSize.set(2048, 2048);
+  if (!phone) key.shadow.mapSize.set(1024, 1024);
   key.shadow.camera.near = 0.5;
   key.shadow.camera.far = 22;
   key.shadow.camera.left = -7;
@@ -820,12 +816,16 @@ export function mountMuseum(canvas, { figures, onPick }) {
 
   const clock = new THREE.Clock();
   let lastFrame = 0;
+  let frames = 0;
   function animate(now) {
     if (!alive) return;
     frame = requestAnimationFrame(animate);
     if (document.hidden) return;
+    if (root?.classList.contains("is-approached")) return;
     if (phone && now - lastFrame < 34) return;
     lastFrame = now || 0;
+    frames += 1;
+    if (frames % 8 === 0) renderer.shadowMap.needsUpdate = true;
     const t = clock.getElapsedTime();
     const sway = reduce ? 0 : Math.sin(t * 0.18) * 0.42;
     const bob = reduce ? 0 : Math.sin(t * 0.22) * 0.03;
