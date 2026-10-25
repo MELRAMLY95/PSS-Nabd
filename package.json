@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "test:grid": "node src/exhibit/nabdGrid.test.mjs",
     "test:science": "node src/exhibit/labScience.test.mjs",
+    "test:city": "node src/exhibit/citySims.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

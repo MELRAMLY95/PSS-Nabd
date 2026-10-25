@@ -44,6 +44,14 @@ const STOPS = [
     label: "Enter the lab",
   },
   {
+    id: "prototype",
+    room: "Build",
+    title: "Our prototype",
+    text: "The living-city model. Run the eight systems together.",
+    href: sitePath("/prototype"),
+    label: "Open the prototype",
+  },
+  {
     id: "game",
     room: "Decide",
     title: "Become the brain",
@@ -67,6 +75,7 @@ const NOTES = {
   connected: "One water problem moves through the whole body. Pause the sequence if you want to stay on a step.",
   health: "Good decisions brighten the body. Poor ones dim it. Nothing here is a pass or a fail.",
   lab: "Each case is biology, then a principle, then an Oman idea. The heart powers the other inventions. Kidneys are water. The liver is waste. Skin is the building envelope.",
+  prototype: "One tabletop city. Solar, shade, water, air, food, waste and roads share the same hour.",
   game: "Water in 2028, energy in 2032, waste in 2036, then the 2040 crisis. One choice each round.",
   vision: "You have reached the close. The lab and the game are where the ideas get used.",
 };
@@ -76,7 +85,8 @@ const NEXT = {
   concept: "connected",
   connected: "health",
   health: "lab",
-  lab: "game",
+  lab: "prototype",
+  prototype: "game",
   game: "vision",
   vision: "game",
 };
@@ -84,6 +94,7 @@ const NEXT = {
 function locate() {
   const route = currentRoute();
   if (route === "/body") return "lab";
+  if (route === "/prototype") return "prototype";
   if (route === "/experience") return "game";
   const line = window.innerHeight * 0.42;
   for (const id of ["vision", "health", "connected", "concept"]) {

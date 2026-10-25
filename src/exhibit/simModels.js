@@ -527,10 +527,10 @@ export const LIVER_KEY = {
 };
 
 export const LIVER_STREAMS = [
-  ["recover", "Recover"],
+  ["recover", "Recyclable"],
   ["organic", "Organic"],
-  ["hazard", "Hazardous"],
-  ["remainder", "Remainder"],
+  ["hazard", "Keep out"],
+  ["remainder", "General waste"],
 ];
 
 export function liverScore(placed) {

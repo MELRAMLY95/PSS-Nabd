@@ -286,6 +286,19 @@ export function NabdGridPanel() {
       </div>
       <div className="lab-sim-read" aria-live="polite">
         <Face kicker={stepLabel(step)} value={kw(frame.unmetKw)} detail={`Coordinated unmet this day ${kwh(sharedAccount.unmetKwh)}. Independent ${kwh(aloneAccount.unmetKwh)}.`} />
+        <div className="district-leds" aria-label="District lamps for this step">
+          {frame.buildings.map((item) => {
+            const served = item.self + item.imported + item.fromBattery + item.fromBackup;
+            const lit = item.dem < 0.05 || served + 0.05 >= item.dem;
+            return (
+              <div key={item.id} className={lit ? "is-on" : ""}>
+                <i />
+                <span><b>{item.short}</b> · {kw(served)} served{item.unmet > 0.05 ? ` · short ${kw(item.unmet)}` : ""}</span>
+              </div>
+            );
+          })}
+        </div>
+        <p className="lab-compare">The lamps stand for the prototype district LEDs. Lit means this step's demand is met in the calculated day. It is not a measured voltage from a solar panel.</p>
         <table className="lab-sheet">
           <caption className="lab-compare">Same roofs, same loads, same battery size and the same starting charge. Independent buildings cannot exchange.</caption>
           <thead>

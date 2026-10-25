@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { buildPrototype } from "./prototypeWorlds.js";
 import { LIVER_KEY, LIVER_TOKENS, NOURISH_BATCHES } from "./simModels.js";
 import { BUILDINGS } from "./nabdGrid.js";
 
@@ -785,7 +786,7 @@ function buildLiver({ kit, pick }) {
     kit.box(1.25, 0.4, 0.06, mat, body).position.set(0, 0.28, 0.5);
     kit.box(0.06, 0.4, 1.05, mat, body).position.set(-0.6, 0.28, 0);
     kit.box(0.06, 0.4, 1.05, mat, body).position.set(0.6, 0.28, 0);
-    kit.label(id[0].toUpperCase() + id.slice(1), body).position.set(0, 0.95, 0);
+    kit.label({ recover: "Recyclable", organic: "Organic", hazard: "Keep out", remainder: "General waste" }[id] || id, body).position.set(0, 0.95, 0);
     pick(body, { type: "assign", stream: id, caption: id[0].toUpperCase() + id.slice(1) });
     binMeshes[id] = { body, mat };
   });
@@ -908,11 +909,11 @@ function buildSkin({ scene, kit, pick }) {
         vents.push(grille);
       }
     }
-    kit.label(adaptive ? "THERMOSKIN" : "Fixed shell", body).position.set(0, 2.3, 0);
+    kit.label(adaptive ? "Adaptive shell" : "Fixed shell", body).position.set(0, 2.3, 0);
     pick(body, {
       type: "shell",
       id: adaptive ? "adaptive" : "fixed",
-      caption: adaptive ? "THERMOSKIN — drag the shade" : "Fixed shell",
+      caption: adaptive ? "Adaptive shell — drag the shade" : "Fixed shell",
       drag: adaptive ? { key: "angle", min: 0, max: 75, step: 1, unit: "°", label: "Shade angle" } : undefined,
     });
     return { panes, sensorMat, louvers, skin, vents };
@@ -1289,15 +1290,5 @@ function sceneParent(mesh) {
 }
 
 export function buildWorld(kind, ctx) {
-  const builders = {
-    kidneys: buildKidneys,
-    heart: buildHeart,
-    brain: buildBrain,
-    liver: buildLiver,
-    skin: buildSkin,
-    digestive: buildDigestive,
-    skeleton: buildSkeleton,
-    lungs: buildLungs,
-  };
-  return builders[kind](ctx);
+  return buildPrototype(kind, ctx);
 }

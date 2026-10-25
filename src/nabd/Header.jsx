@@ -42,7 +42,7 @@ export function Header({ variant = "home" }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-ink/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-3">
+      <div className="mx-auto flex max-w-7xl flex-nowrap items-center justify-between gap-3 overflow-x-auto px-5 py-3">
         <a href={sitePath("/")} className="group flex items-baseline gap-2">
           <span className="font-display text-2xl font-semibold tracking-tight text-bone">Nabd</span>
           <span className="font-display text-lg text-bio" lang="ar">نبض</span>
@@ -50,30 +50,34 @@ export function Header({ variant = "home" }) {
           <span className="hidden font-mono text-[11px] tracking-[0.2em] text-dim sm:inline">OMAN·2040</span>
         </a>
         {variant === "home" ? (
-          <nav className="hidden items-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em] lg:flex" aria-label="Sections">
+          <nav className="hidden items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] lg:flex" aria-label="Sections">
             {LINKS.map(([id, label]) => (
-              <a key={id} href={`#${id}`} className={linkClass(id)} aria-current={active === id ? "true" : undefined}>{label}</a>
+              <a key={id} href={`#${id}`} className={`nabd-nav-chip ${linkClass(id)}`} aria-current={active === id ? "true" : undefined}>{label}</a>
             ))}
           </nav>
         ) : (
-          <span className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-mist md:inline">Decision game · You are the brain</span>
+          <span className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-mist md:inline">{variant === "prototype" ? "Our prototype · The living city" : "Decision game · You are the brain"}</span>
         )}
         <span className="flex items-center gap-3">
           <Roadmap />
           {variant === "home" ? (
             <>
-              <a href={sitePath("/body")} className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-mist hover:text-bone sm:inline">The human body</a>
-              <a href={sitePath("/experience")} className="rounded-full bg-bio px-4 py-2 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(198,165,106,0.4)]">Become the brain →</a>
+              <a href={sitePath("/body")} className="nabd-nav-chip hidden font-mono text-[11px] uppercase tracking-[0.14em] text-mist hover:text-bone sm:inline">The human body</a>
+              <a href={sitePath("/prototype")} className="nabd-nav-chip hidden font-mono text-[11px] uppercase tracking-[0.14em] text-mist hover:text-bone md:inline">Our prototype</a>
+              <a href={sitePath("/experience")} className="shrink-0 whitespace-nowrap rounded-full bg-bio px-4 py-2 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(198,165,106,0.4)]">Become the brain →</a>
             </>
           ) : (
-            <a href={sitePath("/")} className="rounded-full border border-line px-4 py-2 text-sm text-mist hover:border-bio hover:text-bio">← About the invention</a>
+            <span className="flex items-center gap-3">
+              <a href={sitePath("/body")} className="nabd-nav-chip hidden font-mono text-[11px] uppercase tracking-[0.14em] text-mist hover:text-bone sm:inline">The human body</a>
+              <a href={sitePath("/")} className="rounded-full border border-line px-4 py-2 text-sm text-mist hover:border-bio hover:text-bio">← About the invention</a>
+            </span>
           )}
         </span>
       </div>
       {variant === "home" && (
         <nav className="nabd-subnav font-mono text-[11px] uppercase tracking-[0.16em]" aria-label="Sections">
           {LINKS.map(([id, label]) => (
-            <a key={id} href={`#${id}`} className={linkClass(id)} aria-current={active === id ? "true" : undefined}>{label}</a>
+            <a key={id} href={`#${id}`} className={`nabd-nav-chip ${linkClass(id)}`} aria-current={active === id ? "true" : undefined}>{label}</a>
           ))}
         </nav>
       )}
