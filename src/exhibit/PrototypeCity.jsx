@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { Roadmap } from "../nabd/Roadmap.jsx";
 import { sitePath } from "../nabd/site.js";
+import { LabMusic } from "./LabMusic.jsx";
 import { mountCity } from "./cityWorld.js";
 import { prototypeDefaults, prototypeStep, PROTOTYPE_DISTRICTS } from "./citySims.js";
 
@@ -116,7 +118,11 @@ export function PrototypeCity() {
     <div className="city-screen">
       <div ref={host} className="city-view" />
       <a className="city-back" href={sitePath("/")}>← Nabd</a>
-      <a className="city-lab" href={sitePath("/body")}>Human lab</a>
+      <nav className="city-nav" aria-label="Prototype">
+        <Roadmap />
+        <LabMusic />
+        <a className="city-lab" href={sitePath("/body")}>Human lab</a>
+      </nav>
       <aside className="city-ui">
         <div className="city-systems">
           {SYSTEMS.map((entry) => (

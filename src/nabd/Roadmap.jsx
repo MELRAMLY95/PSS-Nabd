@@ -143,7 +143,7 @@ export function Roadmap() {
 
   const current = STOPS.find((stop) => stop.id === here) ?? STOPS[0];
   const upcoming = STOPS.find((stop) => stop.id === NEXT[here]) ?? STOPS[1];
-  const rooms = ["Read", "Study", "Decide", "Close"];
+  const rooms = ["Read", "Study", "Build", "Decide", "Close"];
 
   const guide = (
     <dialog
@@ -163,7 +163,7 @@ export function Roadmap() {
           </div>
           <button type="button" className="nabd-map-close" onClick={() => setOpen(false)}>Close</button>
         </div>
-        <p className="nabd-map-lead">Three rooms. The story explains the system, the lab shows where each idea comes from, and the game is where you run it.</p>
+        <p className="nabd-map-lead">The story explains the system, the lab shows where each idea comes from, the prototype puts them in one city, and the game is where you run it.</p>
         <div className="nabd-map-now">
           <p className="nabd-map-kicker">You are here</p>
           <strong>{current.title}</strong>

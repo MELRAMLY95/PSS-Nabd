@@ -1314,17 +1314,30 @@
   touch-action: none;
 }
 .city-back, .city-lab {
-  position: absolute;
-  z-index: 3;
-  top: 0.8rem;
   color: #1b140f;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-.city-back { left: 0.9rem; }
-.city-lab { right: 0.9rem; }
+.city-back {
+  position: absolute;
+  z-index: 3;
+  top: 0.8rem;
+  left: 0.9rem;
+}
+.city-nav {
+  position: absolute;
+  z-index: 3;
+  top: 0.6rem;
+  right: 0.9rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
 .city-ui {
   position: absolute;
   z-index: 2;
