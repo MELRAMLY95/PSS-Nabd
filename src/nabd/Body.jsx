@@ -36,9 +36,9 @@ export function Body({
   const breathMode = breathScore >= 64 ? "easy" : breathScore >= 40 ? "uneasy" : "labored";
   const breathEase = breathMode === "easy" ? 1 : breathMode === "uneasy" ? 0.45 : Math.max(0, breathScore / 40);
   const breath = `${(breathMode === "labored" ? 1.35 + breathEase * 0.7 : breathMode === "uneasy" ? 2.8 : 5.4).toFixed(2)}s`;
-  const breathX = (breathMode === "easy" ? 1.065 : breathMode === "uneasy" ? 1.03 : 1.012 + breathEase * 0.01).toFixed(3);
-  const breathY = (breathMode === "easy" ? 1.04 : breathMode === "uneasy" ? 1.018 : 1.008).toFixed(3);
-  const breathLift = breathMode === "easy" ? "-1.15%" : breathMode === "uneasy" ? "-0.4%" : "-0.12%";
+  const breathX = (breathMode === "easy" ? 1.024 : breathMode === "uneasy" ? 1.013 : 1.006 + breathEase * 0.005).toFixed(3);
+  const breathY = (breathMode === "easy" ? 1.015 : breathMode === "uneasy" ? 1.008 : 1.004).toFixed(3);
+  const breathLift = breathMode === "easy" ? "-0.35%" : breathMode === "uneasy" ? "-0.15%" : "-0.05%";
   const beat = `${(0.42 + (organs.heart / 100) * 0.78).toFixed(2)}s`;
   const beatScale = (1.05 + (organs.heart / 100) * 0.18).toFixed(3);
   const beatGlow = (0.28 + (organs.heart / 100) * 0.62).toFixed(2);

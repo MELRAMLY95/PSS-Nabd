@@ -1,4 +1,4 @@
-import { brainDecide, brainStep, irrigate, prototypeDefaults, prototypeStep } from "./citySims.js";
+import { advanceHour, brainDecide, brainStep, dayConditions, irrigate, louvreState, prototypeDefaults, prototypeStep } from "./citySims.js";
 
 function assert(condition, message) {
   if (!condition) {
@@ -42,6 +42,33 @@ assert(Math.abs(city.used + city.spare - city.solar) < 1e-6, "solar used plus sp
 assert(city.reservoir < 18 && city.reservoir >= 0, "the reservoir falls and does not go below zero");
 const cut = prototypeStep({ ...prototypeDefaults(), roads: { north: true, east: true, south: false } });
 assert(cut.served.south === 0 && cut.delivered === 0 && cut.reservoir < 18, "a cut south road keeps the lamp dark and the bed dry");
+
+const night = dayConditions(22, 3, 42);
+const noon = dayConditions(12, 3, 42);
+const afternoon = dayConditions(15, 3, 42);
+assert(night.solar === 0 && noon.solar === 3, "panels give nothing at night and their full capacity at noon");
+assert(afternoon.temp === 42 && night.temp < afternoon.temp, "the heat peaks mid-afternoon and is cooler at night");
+const nightCity = prototypeStep({ ...prototypeDefaults(), hour: 22, ...dayConditions(22, 2.4, 42), moisture: 10 });
+assert(nightCity.pump === false && nightCity.served.north === 0, "without sun the pump and the district lamps have no power");
+let clock = prototypeDefaults();
+for (let i = 0; i < 24; i += 1) clock = advanceHour(clock);
+assert(clock.hour === prototypeDefaults().hour && clock.reservoir >= 0 && clock.reservoir <= 18, "a full day returns to the same hour and the reservoir stays in range");
+
+const cloudyNoon = dayConditions(12, 3, 42, "cloudy");
+const heatwave = dayConditions(15, 3, 42, "heatwave");
+assert(cloudyNoon.solar < noon.solar && heatwave.temp > afternoon.temp, "cloud cuts solar output and a heatwave raises the peak");
+
+const hotNoon = louvreState({ mode: "auto", temp: 42, shadeAt: 34, hour: 13, solar: 2 });
+const mildNoon = louvreState({ mode: "auto", temp: 31, shadeAt: 34, hour: 13, solar: 2 });
+assert(hotNoon.closure > mildNoon.closure && hotNoon.closure <= 1, "louvres close further as the heat rises past the threshold");
+assert(hotNoon.roofTemp < hotNoon.roofOpen, "closed louvres keep the roof cooler than an open roof");
+const louvreNight = louvreState({ mode: "track", temp: 36, shadeAt: 34, hour: 22, solar: 0 });
+assert(louvreNight.closure === 0 && louvreNight.blocked === 0, "at night the louvres rest open so the roof can cool");
+const manual = louvreState({ mode: "manual", manual: 60, temp: 30, shadeAt: 34, hour: 10, solar: 1 });
+const unpowered = louvreState({ mode: "manual", manual: 60, temp: 30, shadeAt: 34, hour: 10, solar: 0.01 });
+assert(manual.closure === 0.6 && unpowered.closure === 0, "manual angle needs power to move the slats");
+const tracking = louvreState({ mode: "track", temp: 30, shadeAt: 34, hour: 12, solar: 2 });
+assert(tracking.closure > mildNoon.closure, "following the sun closes the slats even before the heat threshold");
 
 if (process.exitCode) console.error("city sim tests failed");
 else console.log("city sim tests passed");

@@ -1533,7 +1533,7 @@ section[id] {
 
 @keyframes nabd-ease-breath {
   0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
-  50% { transform: translateY(var(--breath-lift, -1%)) scale(var(--breath-x, 1.06), var(--breath-y, 1.04)); filter: brightness(1.1); }
+  50% { transform: translateY(var(--breath-lift, -0.35%)) scale(var(--breath-x, 1.024), var(--breath-y, 1.015)); filter: brightness(1.04); }
 }
 
 @keyframes nabd-labor-breath {
@@ -1542,7 +1542,7 @@ section[id] {
   22% { transform: translateY(0) scale(1); filter: brightness(0.88); }
   38% { transform: translateY(0) scale(calc(1 + (var(--breath-x, 1.012) - 1) * 0.45), calc(1 + (var(--breath-y, 1.008) - 1) * 0.45)); filter: brightness(0.94); }
   54% { transform: scale(1); }
-  76% { transform: translateY(0.25%) scale(0.99); filter: brightness(0.86); }
+  76% { transform: translateY(0.1%) scale(0.996); filter: brightness(0.86); }
 }
 
 @keyframes nabd-pulse {
@@ -1974,7 +1974,7 @@ section[id] {
 
 @keyframes nabd-hero-breath {
   0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-2.2%) scale(1.02, 1.036); }
+  50% { transform: translateY(-0.35%) scale(1.004, 1.008); }
 }
 
 @keyframes nabd-hero-halo {

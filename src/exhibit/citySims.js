@@ -112,21 +112,86 @@ export const PROTOTYPE_DISTRICTS = [
   { id: "south", name: "South beds" },
 ];
 
-export function prototypeDefaults() {
+export function sunHeight(hour) {
+  return Math.max(0, Math.sin((Math.PI * (hour - 6)) / 12));
+}
+
+/**
+ * Roof louvres. Auto closes in proportion to heat above the threshold, follow-the-sun also tracks the sun's height,
+ * and every mode rests open at night so the roof can lose heat. Without power the slats rest open.
+ * Roof surface figures are a model index for the tabletop, not a thermometer reading.
+ */
+export function louvreState({ mode = "auto", manual = 0, temp, shadeAt, hour, solar }) {
+  const sun = sunHeight(hour);
+  const powered = solar >= 0.05;
+  const heat = Math.min(1, Math.max(0, (temp - shadeAt + 3) / 6));
+  let closure = 0;
+  if (mode === "manual") closure = Math.min(100, Math.max(0, manual)) / 100;
+  else if (mode === "track") closure = sun > 0 ? Math.max(heat, 0.25 + 0.6 * sun) : 0;
+  else closure = sun > 0 ? heat * (0.55 + 0.45 * sun) : 0;
+  if (!powered) closure = 0;
+  closure = Math.round(closure * 100) / 100;
+  const gain = 24 * sun;
+  const roofOpen = Math.round((sun > 0 ? temp + gain : temp - 3) * 10) / 10;
+  const roofTemp = Math.round((sun > 0 ? temp + gain * (1 - 0.75 * closure) : temp - 3) * 10) / 10;
+  return { mode, closure, powered, sun, roofTemp, roofOpen, blocked: sun > 0 ? Math.round(75 * closure) : 0 };
+}
+
+export const WEATHER = {
+  clear: { name: "Clear", sun: 1, heat: 0, dust: null },
+  cloudy: { name: "Cloudy", sun: 0.45, heat: -2, dust: null },
+  dust: { name: "Dust storm", sun: 0.6, heat: 1, dust: 95 },
+  heatwave: { name: "Heatwave", sun: 1, heat: 6, dust: null },
+};
+
+/** Sun and outdoor heat for an hour of the model day. Output stops below the horizon; heat peaks mid-afternoon. */
+export function dayConditions(hour, capacity, peakHeat, weather = "clear") {
+  const sky = WEATHER[weather] || WEATHER.clear;
+  const sun = sunHeight(hour);
+  const warmth = 0.5 + 0.5 * Math.cos((2 * Math.PI * (hour - 15)) / 24);
   return {
-    temp: 36,
+    solar: Math.round(Math.max(0, capacity) * sun * sky.sun * 100) / 100,
+    temp: Math.round((peakHeat + sky.heat - 12 + 12 * warmth) * 2) / 2,
+  };
+}
+
+export function prototypeDefaults() {
+  const hour = 11;
+  const capacity = 2.4;
+  const peakHeat = 42;
+  return {
+    hour,
+    capacity,
+    peakHeat,
+    ...dayConditions(hour, capacity, peakHeat),
     moisture: 28,
     shadeAt: 34,
     dryAt: 35,
     target: 55,
     pumpWas: false,
-    solar: 2.2,
     fan: true,
     demands: { north: 0.7, east: 0.8, south: 0.5 },
     roads: { north: true, east: true, south: true },
     reservoir: 18,
     particles: 40,
     growth: 1,
+    louvreMode: "auto",
+    louvreManual: 60,
+    weather: "clear",
+  };
+}
+
+export function advanceHour(state) {
+  const next = prototypeStep(state);
+  const hour = (state.hour + 1) % 24;
+  return {
+    ...state,
+    hour,
+    ...dayConditions(hour, state.capacity, state.peakHeat, state.weather),
+    moisture: next.moisture,
+    pumpWas: next.pumpWas,
+    reservoir: next.reservoir,
+    growth: next.growth,
   };
 }
 
