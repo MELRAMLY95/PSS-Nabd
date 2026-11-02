@@ -34,11 +34,12 @@ assert(leaking.moisture >= 0 && leaking.moisture <= 100, "soil moisture stays wi
 const dryBed = irrigate({ reservoirL: 0, flowLpm: 3, minutes: 5, moisture: 5, leakPct: 10, efficiency: 0.8, rainL: 0, demandL: 2 });
 assert(dryBed.pumped === 0 && dryBed.reservoirEnd === 0, "an empty reservoir pumps nothing");
 
-const dark = prototypeStep({ ...prototypeDefaults(), solar: 0.12, temp: 38, moisture: 20 });
+const dark = prototypeStep({ ...prototypeDefaults(), battery: 0, solar: 0.12, temp: 38, moisture: 20 });
 assert(dark.pump === false && dark.used + dark.spare === 0.12, "a small solar supply cannot run the pump, and the kilowatts still add up");
 const city = prototypeStep(prototypeDefaults());
 assert(city.pump === true && city.shade === true && city.delivered > 0, "the default hour shades the civic roof and waters the bed");
-assert(Math.abs(city.used + city.spare - city.solar) < 1e-6, "solar used plus spare equals the supply");
+const balance = (step) => Math.abs(step.used + step.spare + step.charged - step.solar - step.drawn) < 1e-6;
+assert(balance(city), "power used, spare and charged equals the sun plus the battery");
 assert(city.reservoir < 18 && city.reservoir >= 0, "the reservoir falls and does not go below zero");
 const cut = prototypeStep({ ...prototypeDefaults(), roads: { north: true, east: true, south: false } });
 assert(cut.served.south === 0 && cut.delivered === 0 && cut.reservoir < 18, "a cut south road keeps the lamp dark and the bed dry");
@@ -48,11 +49,28 @@ const noon = dayConditions(12, 3, 42);
 const afternoon = dayConditions(15, 3, 42);
 assert(night.solar === 0 && noon.solar === 3, "panels give nothing at night and their full capacity at noon");
 assert(afternoon.temp === 42 && night.temp < afternoon.temp, "the heat peaks mid-afternoon and is cooler at night");
-const nightCity = prototypeStep({ ...prototypeDefaults(), hour: 22, ...dayConditions(22, 2.4, 42), moisture: 10 });
-assert(nightCity.pump === false && nightCity.served.north === 0, "without sun the pump and the district lamps have no power");
+const nightCity = prototypeStep({ ...prototypeDefaults(), battery: 0, hour: 22, ...dayConditions(22, 2.4, 42), moisture: 10 });
+assert(nightCity.pump === false && nightCity.served.north === 0, "without sun or a charged battery the pump and the district lamps have no power");
+const storedNight = prototypeStep({ ...prototypeDefaults(), battery: 3, hour: 21, ...dayConditions(21, 3.2, 42) });
+assert(storedNight.served.north > 0 && storedNight.drawn > 0 && storedNight.drawn <= 1.5, "after sunset a charged battery lights a district, no faster than its rate");
+assert(storedNight.battery === 3 - storedNight.drawn && balance(storedNight), "the battery falls by exactly what it supplied");
+const sunny = prototypeStep({ ...prototypeDefaults(), demands: { north: 0.2, east: 0.2, south: 0.2 }, battery: 1, hour: 12, ...dayConditions(12, 3.2, 42) });
+assert(sunny.charged > 0 && sunny.battery > 1 && sunny.battery <= 4 && sunny.drawn === 0, "spare noon sun charges the battery without overfilling it");
+const offGrid = prototypeStep({ ...prototypeDefaults(), storage: false, battery: 3, hour: 21, ...dayConditions(21, 3.2, 42) });
+assert(offGrid.drawn === 0 && offGrid.charged === 0 && offGrid.served.north === 0, "with storage switched off the battery neither charges nor supplies");
+const topped = prototypeStep({ ...prototypeDefaults(), demands: { north: 0, east: 0, south: 0 }, battery: 4, hour: 12, ...dayConditions(12, 3.2, 42) });
+assert(topped.charged === 0 && topped.battery === 4 && topped.spare > 0, "a full battery takes no more, so the extra sun is spare");
 let clock = prototypeDefaults();
 for (let i = 0; i < 24; i += 1) clock = advanceHour(clock);
-assert(clock.hour === prototypeDefaults().hour && clock.reservoir >= 0 && clock.reservoir <= 18, "a full day returns to the same hour and the reservoir stays in range");
+assert(clock.hour === prototypeDefaults().hour && clock.reservoir >= 0 && clock.reservoir <= 20, "a full day returns to the same hour and the reservoir stays within the tank");
+const recovering = prototypeStep({ ...prototypeDefaults(), moisture: 60 });
+const sealed = prototypeStep({ ...prototypeDefaults(), moisture: 60, recovery: false });
+assert(recovering.pump === false && recovering.recovered === 0.4 && recovering.reservoir === 18.4 && sealed.reservoir === 18, "greywater recovery tops up the tower only when it is switched on");
+const brim = prototypeStep({ ...prototypeDefaults(), moisture: 60, reservoir: 19.9 });
+assert(brim.reservoir === 20 && brim.recovered === 0.1, "recovery stops at the top of the tank");
+const dryTower = prototypeStep({ ...prototypeDefaults(), reservoir: 0, moisture: 10, recovery: false });
+assert(dryTower.pump === true && dryTower.delivered === 0 && dryTower.dryTank && dryTower.reasons.some((line) => line.includes("running dry")), "an empty tower is reported instead of pretending the bed was watered");
+assert(clock.battery >= 0 && clock.battery <= clock.batteryMax, "the battery stays between empty and full over a day");
 
 const cloudyNoon = dayConditions(12, 3, 42, "cloudy");
 const heatwave = dayConditions(15, 3, 42, "heatwave");
@@ -67,6 +85,8 @@ assert(louvreNight.closure === 0 && louvreNight.blocked === 0, "at night the lou
 const manual = louvreState({ mode: "manual", manual: 60, temp: 30, shadeAt: 34, hour: 10, solar: 1 });
 const unpowered = louvreState({ mode: "manual", manual: 60, temp: 30, shadeAt: 34, hour: 10, solar: 0.01 });
 assert(manual.closure === 0.6 && unpowered.closure === 0, "manual angle needs power to move the slats");
+const dusk = louvreState({ mode: "auto", temp: 36, shadeAt: 34, hour: 18, solar: 0 });
+assert(dusk.sun === 0 && dusk.roofTemp === dusk.roofOpen && dusk.roofTemp < 36, "at 18:00 the sun counts as set, so roofs cool instead of warming");
 const tracking = louvreState({ mode: "track", temp: 30, shadeAt: 34, hour: 12, solar: 2 });
 assert(tracking.closure > mildNoon.closure, "following the sun closes the slats even before the heat threshold");
 

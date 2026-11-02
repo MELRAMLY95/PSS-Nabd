@@ -113,7 +113,8 @@ export const PROTOTYPE_DISTRICTS = [
 ];
 
 export function sunHeight(hour) {
-  return Math.max(0, Math.sin((Math.PI * (hour - 6)) / 12));
+  const height = Math.sin((Math.PI * (hour - 6)) / 12);
+  return height > 1e-9 ? height : 0;
 }
 
 /**
@@ -155,9 +156,13 @@ export function dayConditions(hour, capacity, peakHeat, weather = "clear") {
   };
 }
 
+export const BATTERY_RATE = 1.5;
+export const RESERVOIR_MAX = 20;
+export const RECOVERY_RATE = 0.4;
+
 export function prototypeDefaults() {
   const hour = 11;
-  const capacity = 2.4;
+  const capacity = 3.2;
   const peakHeat = 42;
   return {
     hour,
@@ -178,6 +183,10 @@ export function prototypeDefaults() {
     louvreMode: "auto",
     louvreManual: 60,
     weather: "clear",
+    storage: true,
+    battery: 1,
+    batteryMax: 4,
+    recovery: true,
   };
 }
 
@@ -192,6 +201,7 @@ export function advanceHour(state) {
     pumpWas: next.pumpWas,
     reservoir: next.reservoir,
     growth: next.growth,
+    battery: next.battery,
   };
 }
 
@@ -205,8 +215,12 @@ export function prototypeStep(state) {
     mode: "auto",
     pumpWas: state.pumpWas,
   });
-  let left = Math.max(0, state.solar);
-  const solar = left;
+  const solar = Math.max(0, state.solar);
+  const storage = state.storage !== false;
+  const batteryMax = Math.max(0, state.batteryMax ?? 0);
+  const stored = storage ? Math.min(batteryMax, Math.max(0, state.battery ?? 0)) : 0;
+  const reserve = Math.min(stored, BATTERY_RATE);
+  let left = solar + reserve;
   const servoOn = decision.shade && left >= 0.05;
   if (servoOn) left -= 0.05;
   const pumpOn = decision.pump && left >= 0.2;
@@ -227,6 +241,12 @@ export function prototypeStep(state) {
     left = round(left - give);
     unmet += need - give;
   });
+  const usedTotal = round(solar + reserve - left);
+  const drawn = round(Math.max(0, usedTotal - solar));
+  const solarSpare = round(Math.max(0, solar - usedTotal));
+  const charged = storage ? round(Math.min(solarSpare, BATTERY_RATE, batteryMax - (stored - drawn))) : 0;
+  const battery = round(stored - drawn + charged);
+  left = round(solarSpare - charged);
   const roadOpen = state.roads.south !== false;
   const water = irrigate({
     reservoirL: state.reservoir,
@@ -239,6 +259,8 @@ export function prototypeStep(state) {
     demandL: pumpOn && roadOpen ? 0.4 : 0,
   });
   const delivered = pumpOn && roadOpen ? water.delivered : 0;
+  const recovered = state.recovery ? round(Math.max(0, Math.min(RECOVERY_RATE, RESERVOIR_MAX - water.reservoirEnd))) : 0;
+  const dryTank = pumpOn && state.reservoir <= 0.05;
   const moisture = pumpOn && !roadOpen ? state.moisture : water.moisture;
   const air = fanOn
     ? lungLoad({ particles: state.particles, efficiency: 70, fan: 70, condition: 85, tick: 10 })
@@ -248,7 +270,10 @@ export function prototypeStep(state) {
   else if (moisture < 20) growth = Math.max(0, Math.round((growth - 0.1) * 100) / 100);
   const temp = Math.round(Math.max(20, Math.min(50, state.temp + (servoOn ? -0.4 : 0.5))) * 10) / 10;
   const reasons = [...decision.reasons];
+  if (drawn > 0) reasons.push(`The battery supplied ${drawn.toFixed(2)} kW the panels could not cover.`);
+  if (charged > 0) reasons.push(`Spare sun charged the battery with ${charged.toFixed(2)} kW.`);
   if (decision.pump && !pumpOn) reasons.push("The pump stayed off. The hub did not have 0.2 kW left after the shade.");
+  if (dryTank) reasons.push("The pump is running dry. The reservoir is empty, so refill the tower.");
   if (pumpOn && !roadOpen) reasons.push("The south road is cut, so the water left the reservoir and did not reach the bed.");
   if (!fanOn && state.fan) reasons.push("The fan stayed off. The hub did not have 0.1 kW left.");
   PROTOTYPE_DISTRICTS.forEach((district) => {
@@ -265,13 +290,20 @@ export function prototypeStep(state) {
     fan: state.fan,
     demands: state.demands,
     roads: state.roads,
-    reservoir: water.reservoirEnd,
+    reservoir: round(water.reservoirEnd + recovered),
+    recovered,
+    dryTank,
     particles: state.particles,
     growth: Math.round(growth * 100) / 100,
     served,
     unmet: round(unmet),
-    spare: round(left),
-    used: round(solar - left),
+    spare: left,
+    used: usedTotal,
+    drawn,
+    charged,
+    battery,
+    batteryMax,
+    storage,
     shade: servoOn,
     pump: pumpOn,
     fanOn,

@@ -406,6 +406,9 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
   const charges = [];
   const shafts = [];
   const rayHits = [];
+  const batteryFills = [];
+  const greyDrops = [];
+  const wasteRig = { pushers: [], rings: [], manual: [], bales: [], drum: null, pile: null, screenMat: null, baleCount: 0, compostLevel: 0, compostSpin: 0, lidTimers: [0, 0, 0], drop: null, lastTick: 0 };
   const fronds = [];
   const clouds = [];
   let shaftMat = null;
@@ -424,7 +427,6 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
   let filterBead = null;
   let thermoMercury = null;
   let hubLampMat = null;
-  let gantry = null;
   let parcel = null;
   let shadeCanopy = null;
   let pumpRotor = null;
@@ -1452,6 +1454,7 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
   const tubeLight = new THREE.PointLight(0x9eeaff, 0.35, 1.4);
   tubeLight.position.set(-2.95, 0.5, -2.85);
   scene.add(tubeLight);
+  tag(lungs, "lungs");
 
   const skin = block({
     x: 0.2, z: -3.15, w: 2.35, d: 1.35, h: 0.96, color: 0xf8f5f0, id: "skin", faces: ["pz", "px", "nx", "nz"], roof: "none",
@@ -1709,6 +1712,39 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
   tag(heartHub, "heart");
   scene.add(heartHub);
 
+  const batteryBank = new THREE.Group();
+  batteryBank.position.set(-3.5, 0, 0.33);
+  const bankPlinth = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.03, 0.24), wallMat(0xd9d2c6));
+  bankPlinth.position.y = 0.015;
+  bankPlinth.receiveShadow = true;
+  const bankBody = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.32, 0.2), wallMat(0xe4e0d8));
+  bankBody.position.y = 0.19;
+  bankBody.castShadow = true;
+  const bankCap = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.02, 0.22), metalMat);
+  bankCap.position.y = 0.36;
+  const conduit = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.03), frameMat);
+  conduit.position.set(-0.2, 0.1, -0.06);
+  batteryBank.add(bankPlinth, bankBody, bankCap, conduit);
+  const batteryFillMat = new THREE.MeshStandardMaterial({ color: 0x7ec8a4, emissive: 0x4fae84, emissiveIntensity: 0.6, roughness: 0.4 });
+  const cellGeo = new THREE.BoxGeometry(0.036, 0.2, 0.012).translate(0, 0.1, 0);
+  for (let i = 0; i < 4; i += 1) {
+    const x = -0.105 + i * 0.07;
+    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.23, 0.01), frameMat);
+    slot.position.set(x, 0.2, 0.101);
+    const fill = new THREE.Mesh(cellGeo, batteryFillMat);
+    fill.position.set(x, 0.095, 0.107);
+    fill.userData.cell = i;
+    batteryBank.add(slot, fill);
+    batteryFills.push(fill);
+  }
+  const batteryLedMat = new THREE.MeshBasicMaterial({ color: 0x7ee0b0 });
+  const batteryLed = new THREE.Mesh(new THREE.SphereGeometry(0.016, 10, 8), batteryLedMat);
+  batteryLed.position.set(0.11, 0.38, 0.07);
+  batteryBank.add(batteryLed);
+  batteryBank.userData = { fillMat: batteryFillMat, ledMat: batteryLedMat, level: 0.25 };
+  tag(batteryBank, "heart");
+  scene.add(batteryBank);
+
   const towerWater = buildTower(4.15, -3.15);
   block({ x: 6.55, z: -3.65, w: 0.9, d: 0.7, h: 0.72, color: 0xfffaf6 });
   const utility = new THREE.Group();
@@ -1794,28 +1830,67 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
   binRoof.position.y = 0.82;
   binRoof.castShadow = true;
   bins.add(binRoof);
-  [[-0.4, 0x2f6fbe], [0, 0xe0b04a], [0.4, 0x3d8f55]].forEach(([x, color], index) => {
+  const sedum = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.03, 0.98), new THREE.MeshStandardMaterial({ color: 0x6f8f4a, roughness: 0.9 }));
+  sedum.position.y = 0.87;
+  bins.add(sedum);
+  const tuftMats = [0x7c9a52, 0x5b7a3d, 0x9aa66e].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true }));
+  for (let i = 0; i < 14; i += 1) {
+    const tuft = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045 + (i % 3) * 0.012, 0), tuftMats[i % 3]);
+    tuft.position.set(-0.58 + (i % 7) * 0.19 + (i > 6 ? 0.09 : 0), 0.9, i > 6 ? 0.22 : -0.2);
+    tuft.scale.y = 0.6;
+    bins.add(tuft);
+  }
+  const signCanvas = document.createElement("canvas");
+  signCanvas.width = 512;
+  signCanvas.height = 64;
+  const signCtx = signCanvas.getContext("2d");
+  signCtx.fillStyle = "#1f2b28";
+  signCtx.fillRect(0, 0, 512, 64);
+  signCtx.fillStyle = "#e9f2df";
+  signCtx.font = "600 27px 'JetBrains Mono', monospace";
+  signCtx.textAlign = "center";
+  signCtx.textBaseline = "middle";
+  signCtx.fillText("SORT · RECOVER · COMPOST", 256, 34);
+  [["#2f6fbe", 14], ["#e0b04a", 28], ["#3d8f55", 42]].forEach(([color, x]) => {
+    signCtx.fillStyle = color;
+    signCtx.fillRect(x - 5, 27, 10, 10);
+    signCtx.fillRect(512 - x - 5, 27, 10, 10);
+  });
+  const signMap = new THREE.CanvasTexture(signCanvas);
+  signMap.colorSpace = THREE.SRGBColorSpace;
+  textures.push(signMap);
+  const wasteSignMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: signMap, emissive: 0xffffff, emissiveMap: signMap, emissiveIntensity: 0.35 });
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 0.012), [frameMat, frameMat, frameMat, frameMat, wasteSignMat, frameMat]);
+  sign.position.set(0, 0.79, 0.565);
+  bins.add(sign);
+  const stripMat = new THREE.MeshBasicMaterial({ color: 0xfff1d0 });
+  const strip = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.012, 0.03), stripMat);
+  strip.position.set(0, 0.775, 0.3);
+  bins.add(strip);
+  const wasteColors = [0x2f6fbe, 0xe0b04a, 0x3d8f55];
+  const gaugeGeo = new THREE.BoxGeometry(0.03, 0.3, 0.012).translate(0, 0.15, 0);
+  wasteColors.forEach((color, index) => {
+    const x = [-0.4, 0, 0.4][index];
     const bay = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.5, 0.36), new THREE.MeshStandardMaterial({ color, roughness: 0.42 }));
     bay.position.set(x, 0.28, 0.02);
     bay.castShadow = true;
     bins.add(bay);
-    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.02), new THREE.MeshStandardMaterial({ color: 0x1c1916, roughness: 0.6 }));
-    mouth.position.set(x, 0.34, 0.2);
-    bins.add(mouth);
-    const mark = binMark(["recycle", "leaf", "waste"][index], x);
+    const mark = binMark(["recycle", "leaf", "waste"][index], x - 0.03);
+    mark.position.y = 0.36;
     bins.add(mark);
     const lampMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.15 });
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.028, 10, 8), lampMat);
     lamp.position.set(x, 0.66, 0.22);
     bins.add(lamp);
     bayLamps.push(lampMat);
-    const fill = new THREE.Mesh(
-      new THREE.BoxGeometry(0.22, 0.16, 0.18),
-      new THREE.MeshStandardMaterial({ color, roughness: 0.48 }),
-    );
-    fill.position.set(x, 0.12, 0.02);
-    fill.scale.y = 0.25;
-    fill.userData.level = 0.25;
+    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.33, 0.01), frameMat);
+    slot.position.set(x + 0.12, 0.27, 0.201);
+    bins.add(slot);
+    const gaugeMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.55, roughness: 0.4 });
+    const fill = new THREE.Mesh(gaugeGeo, gaugeMat);
+    fill.position.set(x + 0.12, 0.115, 0.208);
+    fill.userData = { level: 0.2 + index * 0.15, color: new THREE.Color(color), flash: 0, bad: 0 };
+    fill.scale.y = fill.userData.level;
     bins.add(fill);
     bayFills.push(fill);
     const hinge = new THREE.Group();
@@ -1825,10 +1900,23 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
     hinge.add(lid);
     lids.push(hinge);
     bins.add(hinge);
+    const pusher = new THREE.Group();
+    pusher.position.set(x, 0.56, 0.47);
+    const paddle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.012), new THREE.MeshStandardMaterial({ color, roughness: 0.4 }));
+    const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.08, 8).rotateX(Math.PI / 2), metalMat);
+    piston.position.z = 0.04;
+    pusher.add(paddle, piston);
+    bins.add(pusher);
+    wasteRig.pushers.push(pusher);
+    const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.06, 10).rotateX(Math.PI / 2), metalMat);
+    housing.position.set(x, 0.56, 0.55);
+    bins.add(housing);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.012, 8, 28), new THREE.MeshBasicMaterial({ color: 0x7ee0b0, transparent: true, opacity: 0, depthWrite: false }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.6, 0.02);
+    bins.add(ring);
+    wasteRig.rings.push(ring);
   });
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.018, 0.018), metalMat);
-  rail.position.set(0, 0.74, 0.38);
-  bins.add(rail);
   const beltCanvas = document.createElement("canvas");
   beltCanvas.width = 128;
   beltCanvas.height = 32;
@@ -1855,53 +1943,165 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
     roller.position.set(x, 0.46, 0.38);
     bins.add(roller);
   });
-  const sortScanner = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.12, 0.14), frameMat);
-  sortScanner.position.set(-0.64, 0.58, 0.38);
+  const hopper = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.045, 0.12, 4, 1, true).rotateY(Math.PI / 4), new THREE.MeshStandardMaterial({ color: 0xc9ced2, roughness: 0.4, metalness: 0.5, side: THREE.DoubleSide, envMap: roofEnv, envMapIntensity: 0.6 }));
+  hopper.position.set(-0.6, 0.66, 0.38);
+  bins.add(hopper);
+  const archMat = new THREE.MeshStandardMaterial({ color: 0x2f3a40, roughness: 0.45, metalness: 0.4 });
+  [0.3, 0.46].forEach((z) => {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.2, 0.02), archMat);
+    post.position.set(-0.42, 0.6, z);
+    bins.add(post);
+  });
+  const archTop = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.035, 0.2), archMat);
+  archTop.position.set(-0.42, 0.71, 0.38);
+  bins.add(archTop);
   scanBar = new THREE.Mesh(
-    new THREE.BoxGeometry(0.012, 0.08, 0.1),
-    new THREE.MeshBasicMaterial({ color: 0x9ad7f0 }),
+    new THREE.BoxGeometry(0.004, 0.16, 0.12),
+    new THREE.MeshBasicMaterial({ color: 0x9ad7f0, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }),
   );
-  scanBar.position.set(-0.6, 0.58, 0.38);
-  bins.add(sortScanner, scanBar);
-  gantry = new THREE.Group();
-  gantry.position.set(-0.62, 0.74, 0.38);
-  const carriage = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.08), frameMat);
-  const claw = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.1, 0.03), metalMat);
-  claw.position.y = -0.07;
-  gantry.add(carriage, claw);
-  bins.add(gantry);
-  [0, 1, 2].forEach((kind) => {
-    const item = new THREE.Group();
-    if (kind === 0) {
-      const body = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.024, 0.028, 0.08, 12),
-        new THREE.MeshStandardMaterial({ color: 0xd7ebf8, roughness: 0.18, metalness: 0.06, transparent: true, opacity: 0.85 }),
-      );
-      const cap = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.012, 0.012, 0.02, 8),
-        new THREE.MeshStandardMaterial({ color: 0x2f6fbe, roughness: 0.35 }),
-      );
-      cap.position.y = 0.05;
+  scanBar.position.set(-0.42, 0.6, 0.38);
+  bins.add(scanBar);
+  const screenMat = new THREE.MeshBasicMaterial({ color: 0x9ad7f0 });
+  const screen = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.006), screenMat);
+  screen.position.set(-0.42, 0.76, 0.48);
+  screen.rotation.x = -0.35;
+  bins.add(screen);
+  wasteRig.screenMat = screenMat;
+
+  const itemMat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.5, ...extra });
+  const templates = [
+    { stream: 0, build: (item) => {
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.024, 0.075, 12), itemMat(0xd7ebf8, { roughness: 0.15, transparent: true, opacity: 0.85 }));
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.018, 8), itemMat(0x2f6fbe));
+      cap.position.y = 0.046;
       item.add(body, cap);
-    } else if (kind === 1) {
-      const body = new THREE.Mesh(
-        new THREE.SphereGeometry(0.036, 12, 8),
-        new THREE.MeshStandardMaterial({ color: 0x7a9348, roughness: 0.62 }),
-      );
-      body.scale.set(1.15, 0.45, 0.7);
-      item.add(body);
-    } else {
-      const body = new THREE.Mesh(
-        new THREE.BoxGeometry(0.08, 0.012, 0.05),
-        new THREE.MeshStandardMaterial({ color: 0xd5d0c8, roughness: 0.35, metalness: 0.15 }),
-      );
-      body.rotation.z = 0.4;
-      item.add(body);
-    }
+      item.rotation.z = Math.PI / 2;
+    } },
+    { stream: 0, build: (item) => {
+      item.add(new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.05, 14), itemMat(0xc4473a, { roughness: 0.3, metalness: 0.6 })));
+    } },
+    { stream: 0, build: (item) => {
+      item.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.035, 0.045), itemMat(0xb08a5a, { roughness: 0.85 })));
+    } },
+    { stream: 1, build: (item) => {
+      const peel = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.01, 6, 12, Math.PI), itemMat(0xe6c34a));
+      peel.rotation.x = Math.PI / 2;
+      item.add(peel);
+    } },
+    { stream: 1, build: (item) => {
+      const core = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), itemMat(0xc24a3a));
+      core.scale.y = 1.3;
+      item.add(core);
+    } },
+    { stream: 1, build: (item) => {
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), itemMat(0x6f8a4a, { flatShading: true }));
+      leaf.scale.set(1.2, 0.25, 0.7);
+      item.add(leaf);
+    } },
+    { stream: 2, build: (item) => {
+      const bag = new THREE.Mesh(new THREE.IcosahedronGeometry(0.028, 0), itemMat(0xd5d0c8, { roughness: 0.25, metalness: 0.5, flatShading: true }));
+      bag.scale.set(1.3, 0.55, 1);
+      item.add(bag);
+    } },
+    { stream: 2, build: (item) => {
+      const wrap = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.01, 0.04), itemMat(0xe9a6b5, { roughness: 0.4 }));
+      wrap.rotation.y = 0.4;
+      item.add(wrap);
+    } },
+  ];
+  const makeItem = (template) => {
+    const item = new THREE.Group();
+    template.build(item);
+    item.traverse((part) => { part.castShadow = true; });
+    item.userData.stream = template.stream;
     item.visible = false;
     bins.add(item);
+    return item;
+  };
+  const sequence = [0, 3, 6, 1, 4, 7, 2, 5];
+  sequence.forEach((templateIndex, slot) => {
+    const item = makeItem(templates[templateIndex]);
+    item.userData.t = slot / sequence.length;
+    item.userData.pushed = 0;
+    item.userData.spin = slot * 0.7;
     sortJobs.push(item);
   });
+  [0, 3, 7].forEach((templateIndex) => {
+    const item = makeItem(templates[templateIndex]);
+    wasteRig.manual.push(item);
+  });
+
+  const feedMat = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.35, metalness: 0.55, envMap: roofEnv, envMapIntensity: 0.5 });
+  [[0, 0.3, -0.53, 0.95, 0.3, -0.53], [0.95, 0.3, -0.53, 0.95, 0.3, -0.24]].forEach(([x1, y1, z1, x2, y2, z2]) => {
+    const from = new THREE.Vector3(x1, y1, z1);
+    const to = new THREE.Vector3(x2, y2, z2);
+    const dir = to.clone().sub(from);
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, dir.length(), 10), feedMat);
+    tube.position.copy(from).add(to).multiplyScalar(0.5);
+    tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    bins.add(tube);
+  });
+  const compost = new THREE.Group();
+  compost.position.set(0.95, 0, -0.15);
+  [-0.11, 0.11].forEach((z) => {
+    [-0.07, 0.07].forEach((x) => {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.25, 0.018), archMat);
+      leg.position.set(x, 0.12, z);
+      leg.rotation.z = x > 0 ? -0.22 : 0.22;
+      compost.add(leg);
+    });
+  });
+  const drum = new THREE.Group();
+  drum.position.y = 0.22;
+  const drumBody = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.2, 16).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x4f6b3e, roughness: 0.6 }));
+  drumBody.castShadow = true;
+  const drumHatch = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, 0.08), archMat);
+  drumHatch.position.y = 0.085;
+  [-0.07, 0.07].forEach((z) => {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.087, 0.006, 6, 20), archMat);
+    band.position.z = z;
+    drum.add(band);
+  });
+  drum.add(drumBody, drumHatch);
+  compost.add(drum);
+  wasteRig.drum = drum;
+  const pile = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x4a3324, roughness: 1 }));
+  pile.position.set(0, 0.005, 0.2);
+  pile.scale.set(1, 0.4, 1);
+  compost.add(pile);
+  wasteRig.pile = pile;
+  bins.add(compost);
+
+  const baleCanvas = document.createElement("canvas");
+  baleCanvas.width = 64;
+  baleCanvas.height = 64;
+  const baleCtx = baleCanvas.getContext("2d");
+  baleCtx.fillStyle = "#c9d6de";
+  baleCtx.fillRect(0, 0, 64, 64);
+  ["#2f6fbe", "#e9eef2", "#c4473a", "#b08a5a", "#8fb7d8", "#d7ebf8"].forEach((color, index) => {
+    for (let i = 0; i < 9; i += 1) {
+      baleCtx.fillStyle = color;
+      baleCtx.fillRect((i * 23 + index * 11) % 60, (i * 17 + index * 7) % 60, 9, 5);
+    }
+  });
+  baleCtx.fillStyle = "#2a2e31";
+  baleCtx.fillRect(0, 18, 64, 3);
+  baleCtx.fillRect(0, 44, 64, 3);
+  const baleMap = new THREE.CanvasTexture(baleCanvas);
+  baleMap.colorSpace = THREE.SRGBColorSpace;
+  textures.push(baleMap);
+  const baleMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: baleMap, roughness: 0.8 });
+  for (let i = 0; i < 8; i += 1) {
+    const bale = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.07, 0.075), baleMat);
+    bale.position.set(0.91 + (i % 2) * 0.085, 0.036 + Math.floor(i / 4) * 0.072, 0.26 + (Math.floor(i / 2) % 2) * 0.085);
+    bale.rotation.y = (i % 3) * 0.08;
+    bale.castShadow = true;
+    bale.visible = i < 3;
+    bins.add(bale);
+    wasteRig.bales.push(bale);
+  }
+  wasteRig.baleCount = 3;
+  wasteRig.compostLevel = 0.4;
   tag(bins, "liver");
   scene.add(bins);
 
@@ -2016,7 +2216,7 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
     scene.add(post, head);
     leds[id] = headMat;
   }
-  districtLed("north", -3.2, -3.9);
+  districtLed("north", -2.6, -1.15);
   districtLed("east", 5.25, 0.55);
   districtLed("south", 2.0, 2.95);
 
@@ -2254,6 +2454,27 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
     filterBead.position.set(-0.32, 0.5, 0);
     purifier.add(filterBead);
     group.add(purifier);
+    const greyMat = new THREE.MeshStandardMaterial({ color: 0x9b8ac4, roughness: 0.4, metalness: 0.2 });
+    const greyFilter = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 12), greyMat);
+    greyFilter.position.set(-0.44, 0.3, -0.36);
+    greyFilter.castShadow = true;
+    const greyCap = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.025, 12), metalMat);
+    greyCap.position.set(-0.44, 0.39, -0.36);
+    const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8), greyMat);
+    riser.position.set(-0.47, 1.05, -0.2);
+    const link = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.17, 8).rotateX(Math.PI / 2), greyMat);
+    link.position.set(-0.46, 0.31, -0.28);
+    const elbow = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.27, 8).rotateZ(Math.PI / 2), greyMat);
+    elbow.position.set(-0.34, 1.8, -0.2);
+    group.add(greyFilter, greyCap, riser, link, elbow);
+    const dropMat = new THREE.MeshBasicMaterial({ color: 0xc7b9ee });
+    for (let i = 0; i < 5; i += 1) {
+      const drop = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 6), dropMat);
+      drop.position.set(-0.2, 1.75, -0.2);
+      drop.userData.t = i / 5;
+      group.add(drop);
+      greyDrops.push(drop);
+    }
     tag(group, "kidneys");
     scene.add(group);
     return water;
@@ -2349,32 +2570,35 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
 
   bakeStatic(scene, [
     sunDisc, sunGlow, shadeCanopy, fan, scanner, lungs.userData.needle, thermoMercury, filterBead,
-    towerWater, towerSurface, towerMeniscus, pumpRotor, gantry, scanBar,
+    towerWater, towerSurface, towerMeniscus, pumpRotor, scanBar,
     ...Object.values(badges), ...Object.values(barriers), ...servos, ...intakeFins, ...specks, ...ribbons,
     ...towerBubbles, ...crops, ...drops, ...wets, ...sortJobs, ...bayFills, ...lids, ...ripples, ...glints,
-    ...pulses, ...charges, ...fronds, ...clouds,
+    ...pulses, ...charges, ...fronds, ...clouds, ...batteryFills, ...greyDrops,
+    ...wasteRig.pushers, ...wasteRig.rings, ...wasteRig.manual, ...wasteRig.bales, wasteRig.drum, wasteRig.pile,
     ...movingRoofs.flatMap((roof) => [roof.pivot, roof.slats?.rod, ...(roof.slats || [])]),
     ...drips.flatMap((drip) => drip.beads),
     ...fountains.flatMap((jet) => jet.beads),
   ]);
 
   const zoneMat = new THREE.MeshBasicMaterial({ visible: false });
+  const zoneBox = new THREE.Box3();
   function hitZone([x, y, z], [w, h, d], id, action, hint) {
     const zone = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), zoneMat);
     zone.position.set(x, y, z);
     zone.userData = { id, action, hint };
     scene.add(zone);
   }
-  hitZone([0.2, 0.15, -4.35], [1.0, 0.3, 0.42], "skeleton", { type: "road", road: "north" }, "Click to close or reopen the north road");
+  hitZone([-0.1, 0.15, -4.35], [14.6, 0.3, 0.42], "skeleton", { type: "road", road: "north" }, "Click to close or reopen the north road");
   hitZone([5.75, 0.15, 0.3], [0.42, 0.3, 1.0], "skeleton", { type: "road", road: "east" }, "Click to close or reopen the east road");
   hitZone([2.35, 0.15, 3.15], [0.42, 0.3, 1.0], "skeleton", { type: "road", road: "south" }, "Click to close or reopen the road to the beds");
   hitZone([4.15, 1.15, -3.15], [0.75, 2.3, 0.75], "kidneys", { type: "refill" }, "Click to refill the reservoir");
   hitZone([-2.95, 0.36, -3.03], [1.05, 0.62, 0.66], "lungs", { type: "fan" }, "Click to switch the air fan");
+  hitZone([-3.5, 0.2, 0.33], [0.36, 0.42, 0.26], "heart", { type: "battery" }, "Click to switch battery storage on or off");
   hitZone([0.05, 1.32, -0.27], [cw - 0.1, 0.16, cd - 0.1], "skin", { type: "louvreMode" }, "Click to change the roof louvre mode");
   [["recyclable", -0.4], ["organic", 0], ["general", 0.4]].forEach(([bin, offset]) => {
-    hitZone([-5.07 + offset, 0.35, 1.9], [0.36, 0.5, 0.5], "liver", { type: "sort", bin }, `Click to sort the next item into ${bin}`);
+    hitZone([-5.07 + offset, 0.35, 2.0], [0.38, 0.56, 0.74], "liver", { type: "sort", bin }, `Click to sort the next item into ${bin}`);
   });
-  [["north", -3.2, -3.9], ["east", 5.25, 0.55], ["south", 2.0, 2.95]].forEach(([district, x, z]) => {
+  [["north", -2.6, -1.15], ["east", 5.25, 0.55], ["south", 2.0, 2.95]].forEach(([district, x, z]) => {
     hitZone([x, 0.2, z], [0.3, 0.4, 0.3], "heart", { type: "district", district }, `Click to switch the ${district} district load`);
   });
 
@@ -2674,8 +2898,20 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
     pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(scene.children, true).find((item) => item.object.userData.id);
-    return hit ? { id: hit.object.userData.id, action: hit.object.userData.action || null, hint: hit.object.userData.hint || "" } : null;
+    const hits = raycaster.intersectObjects(scene.children, true);
+    const solid = hits.find((item) => item.object.material !== zoneMat && item.object.userData.id);
+    if (!solid) return null;
+    const zone = hits.find((item) => item.object.material === zoneMat && zoneBox.setFromObject(item.object).expandByScalar(0.1).containsPoint(solid.point));
+    if (!zone) return { id: solid.object.userData.id, action: null, hint: "" };
+    let action = zone.object.userData.action;
+    let hint = zone.object.userData.hint || "";
+    if (action.type === "sort") {
+      const offset = solid.point.x - bins.position.x;
+      const bin = offset < -0.2 ? "recyclable" : offset < 0.2 ? "organic" : "general";
+      action = { type: "sort", bin };
+      hint = `Click to sort the next item into ${bin}`;
+    }
+    return { id: zone.object.userData.id, action, hint };
   };
   const onDown = (event) => {
     down = { x: event.clientX, y: event.clientY };
@@ -2741,12 +2977,12 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
   const homeView = { pos: new THREE.Vector3(4.6, 9.2, 12.4), look: new THREE.Vector3(0, 0.15, -0.15) };
   const closeViews = {
     brain: { pos: new THREE.Vector3(1.15, 2.7, 3.15), look: new THREE.Vector3(-0.15, 0.45, 0.55) },
-    heart: { pos: new THREE.Vector3(-2.35, 2.85, 1.15), look: new THREE.Vector3(-3.95, 0.82, -0.22) },
+    heart: { pos: new THREE.Vector3(-2.3, 2.6, 1.75), look: new THREE.Vector3(-3.85, 0.55, -0.05) },
     lungs: { pos: new THREE.Vector3(-1.85, 1.05, -1.55), look: new THREE.Vector3(-3.0, 0.32, -3.0) },
     skin: { pos: new THREE.Vector3(2.05, 1.55, -1.05), look: new THREE.Vector3(0.2, 0.72, -3.05) },
     kidneys: { pos: new THREE.Vector3(5.85, 2.45, -0.55), look: new THREE.Vector3(4.3, 1.05, -2.85) },
     digestive: { pos: new THREE.Vector3(1.55, 1.25, 5.45), look: new THREE.Vector3(0.15, 0.32, 3.92) },
-    liver: { pos: new THREE.Vector3(-5.15, 1.9, 4.55), look: new THREE.Vector3(-5.15, 0.62, 1.9) },
+    liver: { pos: new THREE.Vector3(-4.75, 1.75, 4.45), look: new THREE.Vector3(-4.8, 0.5, 1.95) },
     skeleton: { pos: new THREE.Vector3(-6.55, 0.95, 6.05), look: new THREE.Vector3(-5.15, 0.34, 5.26) },
   };
   controls.addEventListener("start", () => {
@@ -2763,6 +2999,7 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
   let fanSpin = 0;
   const filterClean = new THREE.Color(0xf6f3ea);
   const filterDirty = new THREE.Color(0x9c7a52);
+  const contaminated = new THREE.Color(0xe0685a);
   const heatTint = new THREE.Color(0xffc48a);
   let previous = null;
   const dayHemi = new THREE.Color(0xfff8f2);
@@ -2865,7 +3102,22 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
     lungs.userData.needle.rotation.z += (needleAim - lungs.userData.needle.rotation.z) * Math.min(1, dt * 3);
     if (civic.userData.shadeLamp) civic.userData.shadeLamp.emissiveIntensity = 0.06 + closure * 1.3;
     if (civic.userData.pumpLamp) civic.userData.pumpLamp.emissiveIntensity = live.pump ? 1.25 : 0.06;
-    if (hubLampMat) hubLampMat.emissiveIntensity = 0.12 + gain * 1.5;
+    if (hubLampMat) hubLampMat.emissiveIntensity = 0.12 + gain * 1.5 + (live.drawn || 0) * 0.5;
+    const bank = batteryBank.userData;
+    const storing = state.storage !== false && (state.batteryMax ?? 0) > 0;
+    const charge = storing ? Math.max(0, Math.min(1, (state.battery ?? 0) / state.batteryMax)) : 0;
+    bank.level += (charge - bank.level) * Math.min(1, dt * 2.5);
+    batteryFills.forEach((fill) => {
+      fill.scale.y = Math.max(0.02, Math.min(1, bank.level * 4 - fill.userData.cell));
+    });
+    const beat = 0.5 + 0.5 * Math.sin(clock.elapsedTime * 4);
+    if (!storing) bank.ledMat.color.setHex(0x6a5f55);
+    else if (live.charged > 0) bank.ledMat.color.setHex(0x7ee0b0).multiplyScalar(0.6 + beat * 0.4);
+    else if (live.drawn > 0) bank.ledMat.color.setHex(0xffc56a).multiplyScalar(0.6 + beat * 0.4);
+    else if (charge <= 0.01) bank.ledMat.color.setHex(0xe0685a);
+    else bank.ledMat.color.setHex(0xd8d2c4);
+    bank.fillMat.emissiveIntensity = storing ? 0.35 + (live.charged > 0 || live.drawn > 0 ? beat * 0.4 : 0) : 0.05;
+    bank.fillMat.color.setHex(charge < 0.2 ? 0xe0a35a : 0x7ec8a4);
     solarFaces.forEach((face) => {
       face.emissiveIntensity = 0.06 + gain * 0.72 + Math.sin(clock.elapsedTime * 2.6) * 0.06 * gain;
     });
@@ -3041,6 +3293,13 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
     towerWater.position.y = 0.38 + (1.15 * level) / 2;
     if (towerSurface) towerSurface.position.y = waterTop;
     if (towerMeniscus) towerMeniscus.position.y = waterTop;
+    const refilling = Boolean(state.recovery) && (state.reservoir ?? 0) < 19.95;
+    greyDrops.forEach((drop) => {
+      drop.visible = refilling;
+      if (!refilling) return;
+      drop.userData.t = (drop.userData.t + dt * 0.9) % 1;
+      drop.position.y = 1.75 - drop.userData.t * (1.75 - waterTop);
+    });
     towerBubbles.forEach((bubble) => {
       const rise = live.pump ? 0.28 : 0.05;
       bubble.userData.t = (bubble.userData.t + dt * rise) % 1;
@@ -3087,43 +3346,130 @@ export function mountCity(host, { getState, onSelect, onHover, onAction }) {
         bead.scale.setScalar(flowing ? 1 - k * 0.35 : 0.7);
       });
     });
-    const sortX = [-0.4, 0, 0.4];
-    const sortStep = 3.4;
-    const sortTime = clock.elapsedTime / sortStep;
-    const sortBay = Math.floor(sortTime) % 3;
-    const phase = sortTime - Math.floor(sortTime);
-    const glide = Math.min(1, phase / 0.48);
-    const drop = phase < 0.48 ? 0 : Math.min(1, (phase - 0.48) / 0.22);
-    const finished = phase > 0.78;
-    const targetX = sortX[sortBay];
-    const itemX = -0.62 + (targetX + 0.62) * glide;
-    const itemY = 0.56 - drop * 0.24;
-    const itemZ = 0.38 - drop * 0.14;
-    sortJobs.forEach((item, index) => {
-      item.visible = index === sortBay && !finished;
-      if (index === sortBay) item.position.set(itemX, itemY, itemZ);
-    });
-    if (gantry) gantry.position.x += (itemX - gantry.position.x) * Math.min(1, dt * 8);
-    if (beltScroll) beltScroll.offset.x = (clock.elapsedTime * 0.18) % 1;
-    if (scanBar) scanBar.scale.y = 0.35 + Math.abs(Math.sin(clock.elapsedTime * 10)) * 0.65;
-    if (finished && !sortJobs.counted) {
-      const fill = bayFills[sortBay];
-      if (fill) {
-        fill.userData.level = (fill.userData.level || 0.25) + 0.2;
-        if (fill.userData.level > 1) fill.userData.level = 0.25;
-        fill.scale.y = fill.userData.level;
-        fill.position.y = 0.06 + fill.userData.level * 0.1;
+    const bayX = [-0.4, 0, 0.4];
+    const deposit = (stream, good) => {
+      const fill = bayFills[stream];
+      fill.userData.level = Math.min(1, fill.userData.level + 0.07);
+      fill.userData.flash = 1;
+      if (!good) fill.userData.bad = 1;
+      const ring = wasteRig.rings[stream];
+      ring.userData.age = 0;
+      ring.material.color.setHex(good ? 0x7ee0b0 : 0xe0685a);
+    };
+    const beltRate = 0.085 * (1 - dustLevel * 0.3);
+    let scanned = -1;
+    sortJobs.forEach((item) => {
+      const data = item.userData;
+      data.t += dt * beltRate;
+      if (data.t >= 1) {
+        data.t -= 1;
+        data.pushed = 0;
+        data.counted = false;
       }
-      sortJobs.counted = true;
+      const x = -0.6 + data.t * 1.2;
+      const target = bayX[data.stream];
+      if (data.pushed === 0 && x >= target) {
+        data.pushed = 0.001;
+        wasteRig.pushers[data.stream].userData.kick = 1;
+        wasteRig.lidTimers[data.stream] = 0.7;
+      }
+      if (data.pushed > 0) {
+        data.pushed = Math.min(1, data.pushed + dt * 2.2);
+        const p = data.pushed;
+        item.visible = p < 1;
+        item.position.set(target, 0.535 + Math.sin(p * Math.PI) * 0.06 - p * 0.24, 0.38 - p * 0.36);
+        item.rotation.x = p * 3;
+        if (p >= 1 && !data.counted) {
+          data.counted = true;
+          deposit(data.stream, true);
+        }
+        return;
+      }
+      item.visible = true;
+      const settle = Math.min(1, data.t / 0.05);
+      item.position.set(x, 0.535 + (1 - settle) * 0.15, 0.38);
+      item.rotation.x = 0;
+      item.rotation.y = data.spin + data.t * 1.5;
+      if (Math.abs(x + 0.42) < 0.06) scanned = data.stream;
+    });
+    const sortTick = state.sortEvent?.tick || 0;
+    if (sortTick !== wasteRig.lastTick) {
+      wasteRig.lastTick = sortTick;
+      if (sortTick > 0) wasteRig.drop = { item: state.sortEvent.item, bay: state.sortEvent.bay, right: state.sortEvent.right, t: 0, done: false };
     }
-    if (!finished) sortJobs.counted = false;
+    wasteRig.manual.forEach((item, index) => {
+      const drop = wasteRig.drop;
+      const active = drop && drop.item === index && drop.t < 1;
+      item.visible = Boolean(active);
+      if (!active) return;
+      const ease = Math.min(1, drop.t / 0.75);
+      item.position.set(bayX[drop.bay], 0.7 + Math.sin(ease * Math.PI) * 0.05 - ease * ease * 0.42, 0.62 - ease * 0.6);
+      item.rotation.set(drop.t * 4, drop.t * 3, 0);
+    });
+    if (wasteRig.drop && wasteRig.drop.t < 1) {
+      const drop = wasteRig.drop;
+      drop.t += dt * 1.3;
+      wasteRig.lidTimers[drop.bay] = Math.max(wasteRig.lidTimers[drop.bay], 0.3);
+      if (drop.t >= 0.75 && !drop.done) {
+        drop.done = true;
+        deposit(drop.bay, drop.right);
+      }
+    }
+    wasteRig.pushers.forEach((pusher) => {
+      const kick = pusher.userData.kick || 0;
+      pusher.userData.kick = Math.max(0, kick - dt * 2.4);
+      pusher.position.z = 0.47 - Math.sin((1 - pusher.userData.kick) * Math.PI) * 0.1 * (kick > 0 ? 1 : 0);
+    });
+    wasteRig.rings.forEach((ring) => {
+      const age = ring.userData.age ?? 9;
+      ring.userData.age = age + dt;
+      ring.visible = age < 0.9;
+      if (!ring.visible) return;
+      ring.material.opacity = 1 - age / 0.9;
+      ring.scale.setScalar(1 + age * 0.9);
+      ring.position.y = 0.6 + age * 0.12;
+    });
+    const scanColor = scanned >= 0 ? wasteColors[scanned] : 0x9ad7f0;
+    scanBar.material.color.setHex(scanColor);
+    scanBar.material.opacity = (scanned >= 0 ? 0.75 : 0.35) + Math.sin(clock.elapsedTime * 22) * 0.1;
+    wasteRig.screenMat.color.setHex(scanColor);
+    if (beltScroll) beltScroll.offset.x = (clock.elapsedTime * beltRate * 4.8) % 1;
+    bayFills.forEach((fill, index) => {
+      const data = fill.userData;
+      if (data.level >= 1) {
+        data.level = 0.12;
+        if (index === 0) wasteRig.baleCount = wasteRig.baleCount >= wasteRig.bales.length ? 1 : wasteRig.baleCount + 1;
+        if (index === 1) {
+          wasteRig.compostSpin = 4;
+          wasteRig.compostLevel = wasteRig.compostLevel >= 1 ? 0.3 : wasteRig.compostLevel + 0.15;
+        }
+        const ring = wasteRig.rings[index];
+        ring.userData.age = 0;
+        ring.material.color.setHex(0xfff1d0);
+      }
+      fill.scale.y += (Math.max(0.03, data.level) - fill.scale.y) * Math.min(1, dt * 4);
+      data.flash = Math.max(0, data.flash - dt * 2.5);
+      data.bad = Math.max(0, data.bad - dt * 0.25);
+      fill.material.color.copy(data.color).lerp(contaminated, data.bad > 0 ? 0.5 + 0.5 * Math.sin(clock.elapsedTime * 9) * Math.min(1, data.bad * 2) : 0);
+      fill.material.emissiveIntensity = 0.45 + data.flash * 1.2;
+    });
+    wasteRig.lidTimers = wasteRig.lidTimers.map((value) => Math.max(0, value - dt));
     bayLamps.forEach((material, index) => {
-      material.emissiveIntensity = index === sortBay ? 1.15 : 0.04;
+      material.emissiveIntensity = wasteRig.lidTimers[index] > 0 ? 1.15 : 0.08 + dusk * 0.2;
+      const bad = bayFills[index].userData.bad;
+      material.emissive.setHex(bad > 0 ? 0xe0685a : wasteColors[index]);
     });
     lids.forEach((lid, index) => {
-      const open = index === sortBay && drop > 0.05 ? -0.62 : -0.04;
-      lid.rotation.x += (open - lid.rotation.x) * Math.min(1, dt * 6);
+      const open = wasteRig.lidTimers[index] > 0 ? -0.62 : -0.04;
+      lid.rotation.x += (open - lid.rotation.x) * Math.min(1, dt * 7);
     });
+    wasteRig.bales.forEach((bale, index) => { bale.visible = index < wasteRig.baleCount; });
+    wasteRig.compostSpin = Math.max(0, wasteRig.compostSpin - dt);
+    wasteRig.drum.rotation.z += dt * (wasteRig.compostSpin > 0 ? 2.6 : 0.25);
+    const heap = 0.6 + wasteRig.compostLevel * 0.8;
+    wasteRig.pile.scale.set(heap, 0.3 + wasteRig.compostLevel * 0.5, heap);
+    stripMat.color.setHex(0xfff1d0).multiplyScalar(0.55 + dusk * 0.45);
+    wasteSignMat.emissiveIntensity = 0.25 + dusk * 0.65;
     Object.entries(leds).forEach(([id, material]) => {
       const closed = state.roads?.[id] === false;
       const need = state.demands?.[id] || 0;
