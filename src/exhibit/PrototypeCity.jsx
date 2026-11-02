@@ -23,7 +23,40 @@ const WASTE = [
 ];
 
 const clockText = (hour) => `${String(hour).padStart(2, "0")}:00`;
-const TOUR_STEP_MS = 9000;
+const TOUR_STEP_MS = 11000;
+const TOUR_STEPS = [
+  { id: "intro", kicker: "Living Oman 2040", title: "Welcome to Nabd City", ms: 9000, watch: "Eight systems borrowed from the human body keep this desert city cool, powered, watered and clean. Each stop sets up a moment so you can watch one of them work." },
+  { id: "brain", system: "brain", setup: { hour: 13 }, watch: "The mast on the civic roof reads the heat and the soil. Past the heat line it lowers the shade, and when the soil dries it starts the pump. Follow the lit line from its door to every system." },
+  { id: "heart", system: "heart", setup: { hour: 12, battery: 1.5 }, watch: "Sun rays strike the solar canopies and power flows into the hub. The spare sun charges the battery cabinet beside it. Watch its cells fill." },
+  { id: "lungs", system: "lungs", setup: { hour: 11, weather: "dust", particles: 95 }, watch: "A dust storm rolls in. The fan pulls air through the filter, the ribbons lean into the hood, and the cartridge darkens as it catches dust." },
+  { id: "skin", system: "skin", setup: { hour: 14, peakHeat: 46 }, watch: "A 46 degree afternoon. The roof louvres tilt shut one after another, and the roof stays far cooler than a bare one." },
+  { id: "kidneys", system: "kidneys", setup: { hour: 10, moisture: 22, reservoir: 14 }, watch: "Dry soil starts the pump. Water leaves the tower through three filters, and lilac drops of recovered greywater top the tank back up." },
+  { id: "digestive", system: "digestive", setup: { hour: 10, moisture: 22 }, watch: "Drip lines feed each row at the root. Drops fall only while the pump runs, so no water is sprayed into the hot air." },
+  { id: "liver", system: "liver", setup: { hour: 11 }, demo: "sort", watch: "Waste rides the belt, the scanner lights its colour, and a pusher sweeps it into its bay. Full bays become bales and compost." },
+  { id: "skeleton", system: "skeleton", setup: { hour: 10, roads: { north: true, east: true, south: false } }, watch: "The south road closes. Its lamp goes dark and water can no longer reach the beds. Every system depends on the city's frame." },
+  { id: "outro", kicker: "Explore", title: "Over to you", ms: 9000, watch: "Click the city, run the day, or try a scenario. Every change is explained in the panel." },
+];
+
+function tourStepState(setup = {}) {
+  const base = { ...prototypeDefaults(), ...setup };
+  return { ...base, ...dayConditions(base.hour, base.capacity, base.peakHeat, base.weather) };
+}
+
+function tourCopy(step) {
+  const system = SYSTEMS.find((entry) => entry.id === step.system);
+  return {
+    kicker: step.kicker || `${system.role} · ${system.place}`,
+    title: step.title || `${system.n}. ${system.name}`,
+    watch: step.watch,
+  };
+}
+
+function tourDuration(step, narrate) {
+  const base = step.ms || TOUR_STEP_MS;
+  if (!narrate) return base;
+  const words = `${tourCopy(step).title} ${step.watch}`.split(/\s+/).length;
+  return Math.max(base, words * 430 + 1800);
+}
 
 const SCENARIOS = [
   { id: "noon", name: "Summer noon", system: "skin", set: { hour: 13, peakHeat: 46 }, watch: "Summer noon at 46°. Watch the louvres close and the roof stay cooler than a bare one." },
@@ -215,6 +248,25 @@ export function PrototypeCity() {
   const [log, setLog] = useState([]);
   const [history, setHistory] = useState([]);
   const [tour, setTour] = useState(null);
+  const [narrate, setNarrate] = useState(false);
+  const [panelMin, setPanelMin] = useState(() => {
+    try {
+      return window.localStorage.getItem("nabd-city-panel") === "min";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("nabd-city-panel", panelMin ? "min" : "open");
+    } catch {
+      // Storage can be blocked; the panel still toggles for this visit.
+    }
+  }, [panelMin]);
+  const tourRef = useRef(null);
+  const baselineRef = useRef(null);
+  const tourStep = tour ? tour.step : -1;
   const system = SYSTEMS.find((entry) => entry.id === selected);
   const live = useMemo(() => prototypeStep(state), [state]);
   const louvre = useMemo(() => louvreState({
@@ -295,24 +347,106 @@ export function PrototypeCity() {
   }
 
   function choose(id) {
-    setTour(null);
+    leaveTour();
     focusSystem(id);
   }
 
+  function showStep(index) {
+    const stop = TOUR_STEPS[index];
+    last.current = null;
+    setState(tourStepState(stop.setup));
+    if (stop.system) focusSystem(stop.system);
+    else setHomeTick((value) => value + 1);
+    setTour({ step: index, paused: false });
+  }
+
   function startTour() {
-    setTour({ step: 0 });
-    focusSystem(SYSTEMS[0].id);
+    baselineRef.current = { state: view.current, selected: view.current.selected, running };
+    setRunning(false);
+    showStep(0);
+  }
+
+  function silence() {
+    if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+
+  function leaveTour() {
+    if (!tourRef.current) return;
+    baselineRef.current = null;
+    silence();
+    setTour(null);
+  }
+
+  function endTour() {
+    const saved = baselineRef.current;
+    baselineRef.current = null;
+    silence();
+    setTour(null);
+    if (!saved) return;
+    const { live: _live, louvre: _louvre, selected: _selected, waste: _waste, sortEvent: _sort, focusTick: _focus, homeTick: _home, ...restored } = saved.state;
+    last.current = null;
+    setState(restored);
+    setSelected(saved.selected);
+    setRunning(saved.running);
+    setHomeTick((value) => value + 1);
+  }
+
+  function nextStep() {
+    const current = tourRef.current;
+    if (!current) return;
+    if (current.step + 1 >= TOUR_STEPS.length) endTour();
+    else showStep(current.step + 1);
+  }
+
+  function previousStep() {
+    const current = tourRef.current;
+    if (current && current.step > 0) showStep(current.step - 1);
+  }
+
+  function togglePause() {
+    const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
+    if (synth && tourRef.current) {
+      if (tourRef.current.paused) synth.resume();
+      else synth.pause();
+    }
+    setTour((current) => (current ? { ...current, paused: !current.paused } : current));
+  }
+
+  function pauseTour() {
+    if (!tourRef.current || tourRef.current.paused) return;
+    togglePause();
   }
 
   useEffect(() => {
-    if (!tour) return undefined;
-    const id = setTimeout(() => {
-      const step = (tour.step + 1) % SYSTEMS.length;
-      setTour({ step });
-      focusSystem(SYSTEMS[step].id);
-    }, TOUR_STEP_MS);
-    return () => clearTimeout(id);
+    tourRef.current = tour;
   }, [tour]);
+
+  useEffect(() => {
+    if (!tour || tour.paused) return undefined;
+    const id = setTimeout(nextStep, tourDuration(TOUR_STEPS[tour.step], narrate));
+    return () => clearTimeout(id);
+  }, [tour, narrate]);
+
+  useEffect(() => {
+    if (tourStep < 0 || TOUR_STEPS[tourStep].demo !== "sort") return undefined;
+    const id = setTimeout(() => setSortEvent((current) => ({ tick: current.tick + 1, item: 0, bay: 0, right: true })), 2200);
+    return () => clearTimeout(id);
+  }, [tourStep]);
+
+  useEffect(() => {
+    if (tourStep < 0 || !narrate || typeof window === "undefined" || !window.speechSynthesis) {
+      silence();
+      return;
+    }
+    const copy = tourCopy(TOUR_STEPS[tourStep]);
+    window.speechSynthesis.cancel();
+    const line = new SpeechSynthesisUtterance(`${copy.title}. ${copy.watch}`);
+    line.lang = "en-GB";
+    line.rate = 1;
+    window.speechSynthesis.speak(line);
+  }, [tourStep, narrate]);
+
+  useEffect(() => silence, []);
 
   function patch(changesToApply) {
     setState((current) => ({ ...current, ...changesToApply }));
@@ -354,7 +488,7 @@ export function PrototypeCity() {
 
   function handleAction(action) {
     const now = view.current;
-    setTour(null);
+    leaveTour();
     if (action.type === "road") {
       const open = !now.roads[action.road];
       setSelected("skeleton");
@@ -390,7 +524,7 @@ export function PrototypeCity() {
   }
 
   function playScenario(scenario) {
-    setTour(null);
+    leaveTour();
     setState(scenarioState(scenario));
     setRunning(Boolean(scenario.run));
     setHistory([]);
@@ -407,7 +541,7 @@ export function PrototypeCity() {
 
   function reset() {
     setRunning(false);
-    setTour(null);
+    leaveTour();
     setState(prototypeDefaults());
     setSorted({ right: 0, wrong: 0 });
     setItem(0);
@@ -421,7 +555,28 @@ export function PrototypeCity() {
     const onKey = (event) => {
       if (event.target instanceof Element && event.target.closest("input, textarea, select, dialog")) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
-      setTour(null);
+      if (tourRef.current) {
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          nextStep();
+          return;
+        }
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          previousStep();
+          return;
+        }
+        if (event.key === " ") {
+          event.preventDefault();
+          togglePause();
+          return;
+        }
+        if (event.key === "Escape") {
+          endTour();
+          return;
+        }
+        leaveTour();
+      }
       const match = SYSTEMS.find((entry) => entry.n === event.key);
       if (match) {
         choose(match.id);
@@ -434,6 +589,8 @@ export function PrototypeCity() {
         step();
       } else if (event.key === "r" || event.key === "R") {
         reset();
+      } else if (event.key === "m" || event.key === "M") {
+        setPanelMin((value) => !value);
       } else if (event.key === "o" || event.key === "O" || event.key === "Escape") {
         setHomeTick((value) => value + 1);
       }
@@ -460,21 +617,45 @@ export function PrototypeCity() {
 
   return (
     <div className={`city-screen${tour ? " is-touring" : ""}`}>
-      <div ref={host} className="city-view" onPointerDown={() => setTour(null)} />
+      <div ref={host} className="city-view" onPointerDown={pauseTour} />
       {tour ? (
-        <section className="city-tour" aria-live="polite" aria-label="Guided tour">
+        <section className={`city-tour${tour.paused ? " is-paused" : ""}`} aria-live="polite" aria-label="Guided tour">
           <header>
-            <span>Guided tour · {tour.step + 1} of {SYSTEMS.length}</span>
-            <button type="button" onClick={() => setTour(null)}>Stop tour</button>
+            <span>Guided tour · {tour.step + 1} of {TOUR_STEPS.length}</span>
+            <div className="city-tour-tools">
+              {typeof window !== "undefined" && window.speechSynthesis ? (
+                <button type="button" aria-pressed={narrate} onClick={() => setNarrate((value) => !value)}>{narrate ? "Voice on" : "Voice off"}</button>
+              ) : null}
+              <button type="button" onClick={endTour}>End tour</button>
+            </div>
           </header>
-          <h2>{SYSTEMS[tour.step].n}. {SYSTEMS[tour.step].name}</h2>
-          <p>{SYSTEMS[tour.step].role} · {SYSTEMS[tour.step].place}</p>
-          <ul>
-            {SYSTEMS[tour.step].points.slice(0, 3).map((point) => <li key={point}>{point}</li>)}
-          </ul>
-          <i key={tour.step} style={{ "--tour-ms": `${TOUR_STEP_MS}ms` }} />
+          <p className="city-tour-kicker">{tourCopy(TOUR_STEPS[tour.step]).kicker}</p>
+          <h2>{tourCopy(TOUR_STEPS[tour.step]).title}</h2>
+          <p className="city-tour-watch">{TOUR_STEPS[tour.step].system ? <b>Watch</b> : null}{TOUR_STEPS[tour.step].watch}</p>
+          <div className="city-tour-nav">
+            <button type="button" onClick={previousStep} disabled={tour.step === 0} aria-label="Previous stop">‹</button>
+            <button type="button" className="city-tour-play" onClick={togglePause} aria-label={tour.paused ? "Resume tour" : "Pause tour"}>{tour.paused ? "▶" : "❚❚"}</button>
+            <ol aria-label="Tour stops">
+              {TOUR_STEPS.map((stop, index) => (
+                <li key={stop.id}>
+                  <button type="button" aria-current={index === tour.step ? "step" : undefined} className={index < tour.step ? "is-done" : ""} onClick={() => showStep(index)} aria-label={`Go to ${tourCopy(stop).title}`} />
+                </li>
+              ))}
+            </ol>
+            <button type="button" onClick={nextStep} aria-label={tour.step + 1 >= TOUR_STEPS.length ? "Finish tour" : "Next stop"}>{tour.step + 1 >= TOUR_STEPS.length ? "Finish" : "›"}</button>
+          </div>
+          {tour.paused ? <p className="city-tour-hint">Paused. Look around, then press play or use the arrow keys.</p> : null}
+          <i key={tour.step} style={{ "--tour-ms": `${tourDuration(TOUR_STEPS[tour.step], narrate)}ms` }} />
         </section>
-      ) : null}
+      ) : (
+        <button type="button" className="city-tour-cta" onClick={startTour}>
+          <span aria-hidden="true">▶</span>
+          <span>
+            <b>Start the guided tour</b>
+            <small>About 2 minutes · all 8 systems shown live</small>
+          </span>
+        </button>
+      )}
       {hovered ? (
         <p className="city-tip" style={{ left: hover.x + 14, top: hover.y + 14 }} aria-hidden="true">
           <b>{hovered.n}. {hovered.name}</b> {hover.hint || hovered.role}
@@ -494,10 +675,21 @@ export function PrototypeCity() {
             </button>
           ))}
         </div>
-        <div className="city-card">
+        <div className={`city-card${panelMin ? " is-min" : ""}`} id="city-panel">
           <div className="city-card-head">
             <h2>{system.n}. {system.name}</h2>
             <span className={`city-clock${night ? " is-night" : ""}`}>{night ? "☾" : "☀"} {clockText(state.hour)}</span>
+            <button
+              type="button"
+              className="city-min"
+              aria-controls="city-panel"
+              aria-expanded={!panelMin}
+              aria-label={panelMin ? "Show the full panel" : "Minimise the panel"}
+              title={panelMin ? "Show the full panel (M)" : "Minimise the panel (M)"}
+              onClick={() => setPanelMin((value) => !value)}
+            >
+              {panelMin ? "+" : "–"}
+            </button>
           </div>
           <p className="city-role">{system.role} · {system.place}</p>
           <ul className="city-chips" aria-label="City status">
@@ -600,7 +792,7 @@ export function PrototypeCity() {
             <button type="button" onClick={step}>+1 hour</button>
             <button type="button" onClick={() => setHomeTick((value) => value + 1)}>Overview</button>
             <button type="button" onClick={reset}>Reset</button>
-            <button type="button" aria-pressed={Boolean(tour)} onClick={() => (tour ? setTour(null) : startTour())}>{tour ? "Stop tour" : "Guided tour"}</button>
+            <button type="button" aria-pressed={Boolean(tour)} onClick={() => (tour ? endTour() : startTour())}>{tour ? "End tour" : "Guided tour"}</button>
           </div>
           <div className="city-scenarios" role="group" aria-label="Try a scenario">
             <span>Try a scenario</span>
@@ -614,7 +806,7 @@ export function PrototypeCity() {
               {system.points.map((point) => <li key={point}>{point}</li>)}
             </ul>
           </details>
-          <p className="city-keys">Click roads, the water tower, the air fan, roofs, bins, district lamps or the battery to use them · 1–8 systems · Space runs · S adds an hour · O overview · R reset</p>
+          <p className="city-keys">Click roads, the water tower, the air fan, roofs, bins, district lamps or the battery to use them · 1–8 systems · Space runs · S adds an hour · O overview · R reset · M minimises this panel</p>
         </div>
       </aside>
     </div>
